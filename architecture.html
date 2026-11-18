@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LITMUS · 多智能体系统技术深度</title>
+<style>
+:root{
+  --bg:#f5f7fb; --surface:#ffffff; --ink:#0f172a; --sub:#5b6573; --muted:#8a94a3;
+  --line:#e6eaf0; --brand:#1d4ed8; --violet:#7c3aed; --teal:#0d9488;
+  --soft:#eef3ff; --shadow:0 6px 24px rgba(19,39,84,.07);
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --code:#0b1730; --codeink:#dbe6fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:14px 0}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between}
+.topbar a{color:var(--brand);text-decoration:none;font-size:13px;font-weight:650}
+.topbar .brand{font-weight:750;color:var(--ink);font-size:15px}
+
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#08142e 0%,#102450 48%,#182d68 100%);color:#fff}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 18% 18%,rgba(56,189,248,.18),transparent 40%),radial-gradient(circle at 82% 10%,rgba(124,58,237,.24),transparent 42%);pointer-events:none}
+.hero .wrap{position:relative;padding-top:58px;padding-bottom:48px}
+.hero-tag{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:#8fb6f5;border:1px solid rgba(255,255,255,.18);padding:6px 12px;border-radius:6px;display:inline-block;margin-bottom:18px}
+.hero h1{font-size:clamp(30px,4.6vw,46px);line-height:1.15;font-weight:770;letter-spacing:-1px;margin-bottom:14px}
+.hero h1 em{font-style:normal;color:#7dd3fc}
+.hero .lead{max-width:760px;color:#c7d5ea;font-size:15px;margin-bottom:30px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:17px 15px}
+.kpi .v{font-size:27px;font-weight:760;letter-spacing:-.5px;color:#7dd3fc}
+.kpi:nth-child(2) .v{color:#c4b5fd}.kpi:nth-child(3) .v{color:#a5f3fc}.kpi:nth-child(4) .v{color:#fcd34d}
+.kpi .k{font-size:12px;color:#b9c9e2;margin-top:5px}
+
+section{padding:58px 0}
+section.alt{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-tag{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1.6px;color:var(--brand);text-transform:uppercase;margin-bottom:8px}
+.sec-head h2{font-size:26px;font-weight:750;letter-spacing:-.4px;margin-bottom:8px}
+.sec-head p{color:var(--sub);font-size:14px;max-width:800px;margin-bottom:26px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.box h3{font-size:15px;margin-bottom:8px}
+.box p{font-size:13px;color:var(--sub)}
+.box .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;color:var(--brand);background:var(--soft);border-radius:5px;padding:3px 8px;margin:0 5px 5px 0}
+.box ul{list-style:none;margin-top:8px}
+.box li{font-size:12.8px;color:var(--sub);padding-left:16px;position:relative;margin-bottom:6px}
+.box li::before{content:"›";position:absolute;left:0;color:var(--brand);font-weight:700}
+
+/* code */
+.code{background:var(--code);border-radius:11px;overflow:hidden;margin:14px 0;box-shadow:0 8px 22px rgba(8,20,45,.18)}
+.code .hd{background:#122348;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#8fa9d4;display:flex;justify-content:space-between}
+.code pre{margin:0;padding:15px 16px;overflow-x:auto}
+.code code{font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--codeink);white-space:pre}
+.code .c{color:#7189b0;font-style:italic}
+.code .k{color:#7dd3fc}
+.code .s{color:#a5f3fc}
+.code .n{color:#fcd34d}
+.note{background:linear-gradient(135deg,#eef4ff,#f7f4ff);border:1px solid #e0e9ff;border-left:3px solid var(--brand);border-radius:10px;padding:14px 16px;font-size:13px;color:#334155;margin-top:12px}
+.note b{color:var(--brand)}
+
+/* topology svg */
+.topo{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.topo svg{width:100%;height:auto;display:block}
+.topo .legend{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:var(--sub)}
+.topo .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+/* flow steps */
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:10px}
+.step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 52px;position:relative;box-shadow:var(--shadow)}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:15px;top:14px;font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--brand);width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.step b{font-size:14px;display:block;margin-bottom:3px}
+.step p{font-size:12.8px;color:var(--sub)}
+.step.warn::before{background:var(--violet)}
+
+/* tree */
+.tree{background:var(--code);border-radius:11px;padding:18px;color:#cbd8ef;font-family:var(--mono);font-size:12px;line-height:1.9;overflow-x:auto}
+.tree .d{color:#7dd3fc}.tree .f{color:#e2e8f0}.tree .cm{color:#6f87ad}
+
+footer{border-top:1px solid var(--line);padding:26px 0 38px;color:var(--muted);font-size:12.5px;text-align:center}
+footer a{color:var(--brand);text-decoration:none}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap"><span class="brand">LITMUS · 技术深度</span><a href="index.html">← 返回项目首页</a></div></div>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="hero-tag">SOURCE CODE / ARCHITECTURE DEEP DIVE</span>
+    <h1>多智能体系统 · <em>技术实现细节</em></h1>
+    <p class="lead">这不是调用一个 LLM API 的 demo。下面每一条设计都能在仓库源码里逐行验证——从星型编排拓扑、消息协议、权限硬隔离，到内存泄漏踩坑与性能取舍。点开 README 可看到完整目录。</p>
+    <div class="kpis">
+      <div class="kpi"><div class="v">7</div><div class="k">Agent 类（协调/四信号/融合/基类）</div></div>
+      <div class="kpi"><div class="v">14</div><div class="k">消息类型 · 状态机协议</div></div>
+      <div class="kpi"><div class="v">16.4k</div><div class="k">行 TypeScript 核心代码</div></div>
+      <div class="kpi"><div class="v">6GB</div><div class="k">大批量计算堆内存调优</div></div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">01 / Orchestration Topo</div>
+      <h2>星型编排拓扑</h2>
+      <p>四个专业智能体彼此不直接通信，只与协调智能体（Orchestrator）交互。协调者负责分解任务、收集状态、触发融合——专业智能体只专注自己的指标，职责单一、可独立替换模型。</p>
+    </div>
+    <div class="topo">
+      <svg viewBox="0 0 680 320" role="img" aria-label="多智能体星型拓扑图">
+        <defs>
+          <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#1d4ed8"/></marker>
+          <marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#0d9488"/></marker>
+        </defs>
+        <!-- edges signals -> orchestrator -->
+        <g stroke="#1d4ed8" stroke-width="1.6" opacity=".55" marker-end="url(#ar)">
+          <line x1="196" y1="60" x2="274" y2="146"/>
+          <line x1="196" y1="126" x2="274" y2="152"/>
+          <line x1="196" y1="192" x2="274" y2="158"/>
+          <line x1="196" y1="258" x2="274" y2="164"/>
+        </g>
+        <g stroke="#94a3b8" stroke-width="1.3" stroke-dasharray="4 3" opacity=".8">
+          <line x1="274" y1="139" x2="196" y2="53"/>
+          <line x1="274" y1="145" x2="196" y2="119"/>
+          <line x1="274" y1="151" x2="196" y2="185"/>
+          <line x1="274" y1="157" x2="196" y2="251"/>
+        </g>
+        <!-- orchestrator -> fusion -->
+        <line x1="404" y1="153" x2="500" y2="153" stroke="#0d9488" stroke-width="2" marker-end="url(#ag)"/>
+        <!-- signal nodes -->
+        <g font-family="sans-serif">
+          <g fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.4">
+            <rect x="40" y="38" width="156" height="44" rx="10"/>
+            <rect x="40" y="104" width="156" height="44" rx="10"/>
+            <rect x="40" y="170" width="156" height="44" rx="10"/>
+            <rect x="40" y="236" width="156" height="44" rx="10"/>
+          </g>
+          <g font-size="12.5" font-weight="700" fill="#1e3a8a">
+            <text x="54" y="58">S1 影响力评价</text>
+            <text x="54" y="124">S2 MeSH 领域</text>
+            <text x="54" y="190">S3 知识网络桥梁</text>
+            <text x="54" y="256">S4 认知新颖性</text>
+          </g>
+          <g font-size="10" fill="#64748b">
+            <text x="54" y="73">LLM 五维评分 · 豆包</text>
+            <text x="54" y="139">NLM 本体 + 本地回退</text>
+            <text x="54" y="205">TF-IDF + Brandes 中心性</text>
+            <text x="54" y="271">Embedding + 概念频率</text>
+          </g>
+          <!-- orchestrator -->
+          <rect x="274" y="118" width="130" height="70" rx="14" fill="#0f2553" stroke="#0f2553"/>
+          <text x="339" y="147" text-anchor="middle" font-size="14" font-weight="750" fill="#fff">Orchestrator</text>
+          <text x="339" y="166" text-anchor="middle" font-size="10.5" fill="#a8c3f0">协调智能体 · 决策中枢</text>
+          <text x="339" y="180" text-anchor="middle" font-size="9.5" fill="#7ea0dc">不执行科学计算</text>
+          <!-- fusion -->
+          <rect x="500" y="128" width="150" height="50" rx="11" fill="#ecfdf5" stroke="#0d9488" stroke-width="1.4"/>
+          <text x="575" y="150" text-anchor="middle" font-size="13" font-weight="750" fill="#0f766e">Fusion Agent</text>
+          <text x="575" y="166" text-anchor="middle" font-size="10" fill="#5b8f88">融合与验证 · 不接触 H1</text>
+        </g>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#1d4ed8"></i>任务下发 TASK_ASSIGNED</span>
+        <span><i style="background:#94a3b8"></i>状态回流 TASK_COMPLETED</span>
+        <span><i style="background:#0d9488"></i>融合请求 FUSION_REQUEST</span>
+      </div>
+    </div>
+    <div class="note"><b>设计要点：</b>协调智能体在代码里被明确约束「不执行任何科学计算；指标公式、标准化、权重、数据划分、H1 标签不可变」——把「编排」和「计算」彻底解耦，这是多智能体系统可维护、可审计的关键。</div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">02 / Communication Protocol</div>
+      <h2>消息协议与状态机</h2>
+      <p>自研 14 种消息类型的通信协议，统一消息格式（message_id / task_id / from / to / type / payload / timestamp），Agent 有 5 态状态机（IDLE / RUNNING / COMPLETED / FAILED / RETRYING）。</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="code">
+          <div class="hd"><span>communication/agent-protocol.ts</span><span>协议定义</span></div>
+<pre><code><span class="c">// 星型拓扑：专业 agent 只与 orchestrator 通信</span>
+<span class="k">export type</span> MessageType =
+  | <span class="s">'TASK_ASSIGNED'</span>   <span class="c">// 协调者 → 专业agent：分配任务</span>
+  | <span class="s">'TASK_PROGRESS'</span>   <span class="c">// agent → 协调者：进度</span>
+  | <span class="s">'RETRY_DECIDED'</span>  <span class="c">// agent 自主：重试异常子任务</span>
+  | <span class="s">'FALLBACK_USED'</span>  <span class="c">// agent 自主：切换备用工具</span>
+  | <span class="s">'INFO_REQUEST'</span>   <span class="c">// agent 请求补充信息</span>
+  | <span class="s">'FUSION_REQUEST'</span> <span class="c">// 协调者 → 融合agent</span>
+  | <span class="s">'FUSION_COMPLETED'</span> <span class="c">// 融合完成</span>
+  <span class="c">// …共 14 种</span>
+
+<span class="k">export interface</span> AgentMessage&lt;T&gt; {
+  message_id: <span class="k">string</span>; task_id: <span class="k">string</span>;
+  from: AgentName; to: AgentName | <span class="s">'broadcast'</span>;
+  message_type: MessageType;
+  status: MessageStatus;
+  payload: T; timestamp: <span class="k">number</span>;
+}</code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="box" style="margin-bottom:14px">
+          <h3>协议特性</h3>
+          <ul>
+            <li>不是直接函数调用，而是带 ID、时间戳、状态的可追溯消息流</li>
+            <li>每次任务执行都有完整日志，可回放每个智能体的每一步</li>
+            <li>进度消息节流：每 5% 上报一次，避免万篇级任务的消息洪泛</li>
+            <li>信息请求带 5 秒超时（Promise + 订阅 + 清理），防悬挂等待</li>
+          </ul>
+        </div>
+        <div class="code">
+          <div class="hd"><span>agents/base-agent.ts</span><span>进度节流</span></div>
+<pre><code><span class="c">// 进度消息节流：每5%或总数变化时上报，避免消息洪泛</span>
+<span class="k">if</span> (total &gt; 0 &amp;&amp;
+    (done === total ||
+     done % Math.max(1, Math.floor(total / <span class="n">20</span>)) === <span class="n">0</span>)) {
+  <span class="k">this</span>.send(taskId, <span class="s">'orchestrator'</span>, <span class="s">'TASK_PROGRESS'</span>, ...);
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">03 / Research Integrity by Design</div>
+      <h2>实验诚信：用类型系统硬隔离数据泄漏</h2>
+      <p>科研诚信被写进代码约束：融合智能体从类型层面接触不到 H1 标签，从结构上杜绝「看着答案打分」的可能。</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="box">
+          <h3>Agent 的权限边界</h3>
+          <p><span class="tag">可自主</span>重试 · 备用工具 · 异常处理 · 请求补充信息 · 标记失败</p>
+          <p style="margin-top:8px"><span class="tag" style="color:#b91c1c;background:#fef2f2">禁止</span>改指标公式 · 改标准化方式 · 改融合权重 · 改数据划分 · 碰 H1 标签</p>
+          <div class="note" style="margin-top:12px"><b>类型层隔离：</b><code style="font-family:var(--mono);font-size:11px">FusionInput</code> 接口里根本没有 <code style="font-family:var(--mono);font-size:11px">isH1 / h1Classification / h1Rating</code> 字段，编译期就无法传入。</div>
+        </div>
+        <div class="code">
+          <div class="hd"><span>communication/agent-protocol.ts</span><span>设计约束</span></div>
+<pre><code><span class="c">// 设计约束（实验诚信红线，代码层硬隔离）：
+// - 任何 Agent 的消息 payload 中禁止携带 H1 标签
+//   (isH1 / h1Classification / h1Rating)
+// - 融合权重在任务创建时锁定，流转中只读
+// - 指标公式、标准化、数据划分由工具层固化，Agent 无权变更</span></code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="code">
+          <div class="hd"><span>agents/orchestrator-agent.ts</span><span>H1 剥离点</span></div>
+<pre><code><span class="c">// H1 剥离点：此处只取 { pmid, score }，
+// 绝不携带 h1Map 中任何字段</span>
+<span class="k">const</span> pickScore = (arr) =&gt;
+  arr
+    .filter((r) =&gt; r &amp;&amp; <span class="k">typeof</span> r.pmid === <span class="s">'string'</span>)
+    .map((r) =&gt; ({ pmid: r.pmid, score: r.score }));
+
+<span class="k">this</span>.send(taskId, <span class="s">'fusion_agent'</span>,
+  <span class="s">'FUSION_REQUEST'</span>, <span class="s">'info'</span>, {
+    s1: pickScore(task.signal1Results),
+    s2: pickScore(task.signal2Results),
+    s3: pickScore(task.signal3Results),
+    s4: pickScore(task.signal4Results),
+    weights: task.weights,
+    taskPmids: task.papers.map((p) =&gt; p.pmid),
+  });</code></pre>
+        </div>
+        <div class="box">
+          <h3>权重防篡改</h3>
+          <p>任务创建时用 <code style="font-family:var(--mono)">Object.freeze({...weights})</code> 防御性冻结，运行期任何 Agent 都无法修改融合权重。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">04 / Fusion Algorithm</div>
+      <h2>融合算法与异常检测</h2>
+      <p>融合智能体验证四路信号后再加权：min-max 归一化 → 退化信号（无区分度）权重置零并重分配 → 加权求和。全程记录PMID缺失、分值越界等异常。</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="code">
+          <div class="hd"><span>agents/fusion-agent.ts</span><span>退化检测 + 融合</span></div>
+<pre><code><span class="k">function</span> isDegenerate(scores: <span class="k">number</span>[]): <span class="k">boolean</span> {
+  <span class="k">const</span> min = Math.min(...scores);
+  <span class="k">const</span> max = Math.max(...scores);
+  <span class="k">return</span> max - min &lt; <span class="n">1e-10</span>;  <span class="c">// 无区分度</span>
+}
+<span class="c">// 退化信号权重置零，剩余重新归一化</span>
+<span class="k">let</span> w1 = degenerate.s1 ? <span class="n">0</span> : w.signal1;
+<span class="k">let</span> w2 = degenerate.s2 ? <span class="n">0</span> : w.signal2;
+<span class="k">const</span> wSum = w1 + w2 + w3 + w4;
+<span class="k">const</span> fusedScore = wSum === <span class="n">0</span> ? <span class="n">0.5</span>
+  : (sc.s1*w1 + sc.s2*w2 + sc.s3*w3 + sc.s4*w4) / wSum;</code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="box">
+          <h3>融合前的四道校验</h3>
+          <ul>
+            <li>PMID 一致性：缺失 / 任务外 PMID 全部记录</li>
+            <li>分值范围：非 [0,1] 有限数值视为异常</li>
+            <li>退化信号检测：无区分度信号自动降权</li>
+            <li>全退化兜底：返回 0.5，不产生 NaN</li>
+          </ul>
+        </div>
+        <div class="note"><b>为什么要这样：</b>LLM 输出不稳定是常态，融合层必须对脏数据鲁棒，同时在异常发生时如实上报（而不是悄悄吞掉）——这是系统可信的基础。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">05 / Agent Autonomy</div>
+      <h2>单智能体的自主决策：以 S1 为例</h2>
+      <p>智能体不是被动执行——它在限定权限内自主决策：前置质检省 LLM 调用、8 路并发、JSON 结构校验、失败自动重试一轮、兜底分，最后产出质检报告。</p>
+    </div>
+    <div class="steps">
+      <div class="step"><b>前置质检</b><p>摘要缺失或少于 50 字符的论文直接标记失败，不浪费一次 LLM 调用。</p></div>
+      <div class="step"><b>分批并发</b><p>每批默认 50 篇，批内 8 路并发调用豆包模型（doubao-seed-2-0-lite），实时回报进度。</p></div>
+      <div class="step"><b>结构校验</b><p>校验 score ∈ [0,1] 且五维创新类型字段齐全，结构不通过进入重试队列。</p></div>
+      <div class="step warn"><b>自主重试</b><p>失败论文追加一轮重试；仍失败则保留工具兜底分（0.3）并如实上报，不伪造成功。</p></div>
+      <div class="step"><b>质检报告</b><p>汇总三项检查：JSON 结构、摘要完整性、LLM 调用成功率（含重试挽回篇数）。</p></div>
+    </div>
+    <div class="code">
+      <div class="hd"><span>agents/signal1-agent.ts</span><span>自主决策边界（源码注释原文）</span></div>
+<pre><code><span class="c">// 自主决策范围（仅限于此）：
+// - 前置识别摘要缺失/文本异常 → 标记失败并上报，不浪费 LLM 调用
+// - 评分结果 JSON 结构校验（score范围、五维字段齐全）
+// - LLM 调用失败的论文 → 自主决定追加一轮重试
+// - 仍失败 → 保留工具兜底分，标记失败，如实上报协调智能体
+// 禁止：修改 prompt、模型、温度、评分公式</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">06 / Performance Engineering</div>
+      <h2>性能与内存：工程优化实践</h2>
+      <p>万篇级 embedding 与图计算对内存极敏感。源码注释记录了实际遇到的问题与相应的技术取舍。</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="code">
+          <div class="hd"><span>tools/signal1-tool.ts</span><span>技术取舍</span></div>
+<pre><code><span class="c">// 内存安全：必须使用原生 fetch + SSE reader
+// （禁止 LangChain SDK，后者在 Next.js 进程内
+//   并发流式调用时存在原生内存泄漏，实测 OOM）</span>
+<span class="k">const</span> resp = <span class="k">await</span> fetch(
+  <span class="s">`${config.modelBaseUrl}/chat/completions`</span>, {
+    headers: { Authorization: <span class="s">`Bearer ...`</span> },
+    <span class="c">// 流式 reader，逐块处理不堆积</span>
+  });</code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="code">
+          <div class="hd"><span>scripts/dev.sh</span><span>堆内存调优</span></div>
+<pre><code><span class="c"># 大数据量信号计算（S3 投影图 / S4 embedding）
+# 需要更高堆上限，Node 默认 old-space 约 2.2GB，
+# 曾在 5500 篇 S3 计算时 OOM；提到 6GB（机器内存 8GB）</span>
+PORT=5000 NODE_OPTIONS=<span class="s">"--max-old-space-size=6144"</span> \
+  pnpm tsx watch src/server.ts</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="note"><b>关键取舍：</b>在 5500 篇规模出现 OOM 后，定位到 LangChain SDK 的内存泄漏，改用原生 fetch + SSE；同时将 Node 堆上限从默认 2.2GB 调整到 6GB。</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">07 / Source Map</div>
+      <h2>源码结构</h2>
+      <p>完整工程已放入仓库，下面是核心目录。各模块均可独立查看，每一层都有清晰的职责边界。</p>
+    </div>
+    <div class="tree">
+<span class="d">src/</span>
+├── <span class="d">agents/</span>            <span class="cm"># 7 个智能体类</span>
+│   ├── <span class="f">base-agent.ts</span>       <span class="cm"># 基类：状态机 / 消息 / 重试 / 超时请求</span>
+│   ├── <span class="f">orchestrator-agent.ts</span> <span class="cm"># 协调中枢：任务分解 / 融合触发 / H1剥离</span>
+│   ├── <span class="f">signal1-agent.ts</span> ~ <span class="f">signal4-agent.ts</span>  <span class="cm"># 四路专业智能体</span>
+│   └── <span class="f">fusion-agent.ts</span>     <span class="cm"># 融合与验证</span>
+├── <span class="d">communication/</span>      <span class="cm"># 通信协议 + 消息总线</span>
+│   ├── <span class="f">agent-protocol.ts</span>  <span class="cm"># 14 种消息类型 / 状态机 / 诚信约束</span>
+│   └── <span class="f">message-bus.ts</span>
+├── <span class="d">tools/</span>              <span class="cm"># 四路计算工具（LLM / MeSH / 图算法 / Embedding）</span>
+├── <span class="d">lib/</span>                <span class="cm"># 算法：二分网络 / TextRank / MeSH树 / metrics</span>
+├── <span class="d">state/</span>              <span class="cm"># 任务状态 + 执行日志</span>
+├── <span class="d">storage/</span>            <span class="cm"># Supabase / PostgreSQL schema</span>
+└── <span class="d">app/api/</span>             <span class="cm"># REST API：multi-agent / signal1-4 / task</span>
+    └── <span class="f">task/start/route.ts</span>  <span class="cm"># 任务入口 + AUC / Precision@K / Cohen's d 评估</span></div>
+    <div class="note"><b>想进一步验证：</b>仓库根目录 <code style="font-family:var(--mono);font-size:11px">README.md</code> 有完整运行说明；<code style="font-family:var(--mono);font-size:11px">src/agents/</code> 与 <code style="font-family:var(--mono);font-size:11px">src/communication/</code> 是理解编排能力的最佳入口。</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">LITMUS · 多智能体科研创新度测度系统　|　<a href="https://github.com/xinxieyeshang" target="_blank" rel="noopener">GitHub: xinxieyeshang</a>　|　<a href="index.html">返回首页</a></div>
+</footer>
+</body>
+</html>

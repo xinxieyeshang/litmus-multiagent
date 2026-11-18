@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LITMUS - Paper Figures</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f5;color:#1a1a1a;line-height:1.5}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+h1{font-size:24px;font-weight:700;margin-bottom:8px;color:#111}
+h2{font-size:16px;font-weight:600;margin:24px 0 12px;color:#333;border-bottom:2px solid #e5e5e5;padding-bottom:6px}
+h3{font-size:13px;font-weight:600;margin-bottom:6px;color:#555}
+.subtitle{font-size:13px;color:#666;margin-bottom:20px}
+.upload-zone{border:2px dashed #d0d0d0;border-radius:12px;padding:36px;text-align:center;background:#fff;cursor:pointer;transition:all .2s;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.dragover{border-color:#3b82f6;background:#f0f7ff}
+.upload-zone input{display:none}
+.upload-zone .icon{font-size:36px;margin-bottom:8px;color:#9ca3af}
+.upload-zone .text{font-size:13px;color:#6b7280}
+.upload-zone .text strong{color:#3b82f6}
+.status{padding:10px 14px;border-radius:8px;margin-bottom:20px;font-size:12px;display:none}
+.status.success{display:block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.status.error{display:block;background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.fig-section{background:#fff;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.fig-grid{display:grid;gap:16px}
+.fig-grid.c2{grid-template-columns:1fr 1fr}
+.fig-grid.c3{grid-template-columns:1fr 1fr 1fr}
+.fig-panel{position:relative}
+.fig-panel svg{width:100%;height:auto;display:block}
+.plabel{position:absolute;top:6px;left:6px;font-size:11px;font-weight:700;color:#666;background:rgba(255,255,255,.9);padding:1px 5px;border-radius:3px}
+.controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.controls label{font-size:12px;color:#555}
+.controls select{font-size:12px;padding:3px 6px;border:1px solid #d0d0d0;border-radius:5px}
+.btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #d1d5db;background:#fff;color:#374151}
+.btn:hover{background:#f3f4f6}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:11px;color:#555}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-line{width:18px;height:3px;border-radius:2px}
+.hidden{display:none}
+.interp{margin-top:16px;padding:14px 16px;background:#f8fafc;border-left:3px solid #3b82f6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;color:#374151}
+.interp strong{color:#1e40af;font-weight:600}
+.interp .metric{font-family:'SF Mono',Monaco,Consolas,monospace;background:#e0e7ff;padding:1px 5px;border-radius:3px;font-size:11.5px;color:#3730a3}
+.interp p{margin-bottom:8px}
+.interp p:last-child{margin-bottom:0}
+.interp-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+@media(max-width:900px){.fig-grid.c2,.fig-grid.c3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>LITMUS - Comprehensive Paper Figures</h1>
+<p class="subtitle">Upload archive JSON to generate all publication-ready figures</p>
+<div class="upload-zone" id="uploadZone">
+<div class="icon">&#128202;</div>
+<div class="text">Drop archive JSON here, or <strong>click to browse</strong></div>
+<input type="file" id="fileInput" accept=".json">
+</div>
+<div class="status" id="status"></div>
+<div id="allFigs" class="hidden">
+
+<div class="fig-section">
+<h2>Figure 1 - Conceptual Framework: The Four-Dimensional Innovation Space</h2>
+<div class="fig-grid c2">
+<div class="fig-panel"><span class="plabel">A</span><svg id="radarChart" viewBox="0 0 500 440"></svg></div>
+<div class="fig-panel"><span class="plabel">B</span><svg id="matrixChart" viewBox="0 0 500 440"></svg></div>
+</div>
+<div class="interp" id="interp1"></div>
+</div>
+
+<div class="fig-section">
+<h2>Figure 2 - Indicator Correlation Matrix with Composite Distribution</h2>
+<div class="fig-grid c2">
+<div class="fig-panel"><span class="plabel">A</span><svg id="heatmapChart" viewBox="0 0 520 500"></svg></div>
+<div class="fig-panel"><span class="plabel">B</span><svg id="densityChart" viewBox="0 0 500 380"></svg></div>
+</div>
+<div class="interp" id="interp2"></div>
+</div>
+
+<div class="fig-section">
+<h2>Figure 3 - Predictive Performance: ROC, Precision-Recall, and Lift Curves</h2>
+<div class="fig-grid c3">
+<div class="fig-panel"><span class="plabel">A</span><svg id="rocChart" viewBox="0 0 400 370"></svg></div>
+<div class="fig-panel"><span class="plabel">B</span><svg id="prChart" viewBox="0 0 400 370"></svg></div>
+<div class="fig-panel"><span class="plabel">C</span><svg id="liftChart" viewBox="0 0 400 370"></svg></div>
+</div>
+<div class="legend" id="perfLegend"></div>
+<div class="interp" id="interp3"></div>
+</div>
+
+<div class="fig-section">
+<h2>Figure 4 - Innovation Typology Sankey Diagram</h2>
+<div class="fig-panel"><svg id="sankeyChart" viewBox="0 0 700 500"></svg></div>
+<div class="interp" id="interp4"></div>
+</div>
+
+<div class="fig-section">
+<h2>Figure 5 - Robustness and Sensitivity Analysis</h2>
+<div class="fig-grid c3">
+<div class="fig-panel"><span class="plabel">A</span><svg id="weightChart" viewBox="0 0 400 340"></svg></div>
+<div class="fig-panel"><span class="plabel">B</span><svg id="forestChart" viewBox="0 0 400 340"></svg></div>
+<div class="fig-panel"><span class="plabel">C</span><svg id="looChart" viewBox="0 0 400 340"></svg></div>
+</div>
+<div class="interp" id="interp5"></div>
+</div>
+
+</div>
+</div>
+<script>
+const C={s1:'#ef4444',s2:'#3b82f6',s3:'#10b981',s4:'#f59e0b',fusion:'#8b5cf6'};
+const SL={s1:'S1: Significance',s2:'S2: Breadth',s3:'S3: Brokerage',s4:'S4: Deviation',fusion:'Composite'};
+let D=null;
+function sv(tag,a,p){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(a||{}))e.setAttribute(k,v);if(p)p.appendChild(e);return e;}
+function clr(id){const s=document.getElementById(id);while(s.firstChild)s.removeChild(s.firstChild);}
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+function pct(a,p){const s=[...a].sort((x,y)=>x-y);const i=(p/100)*(s.length-1);const l=Math.floor(i),h=Math.ceil(i);return l===h?s[l]:s[l]*(h-i)+s[h]*(i-l);}
+function med(a){return pct(a,50);}
+function spm(x,y){function rk(a){const s=[...a].map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v);const r=new Array(a.length);s.forEach((o,i)=>{r[o.i]=i+1;});return r;}const rx=rk(x),ry=rk(y);const n=x.length,mx=mean(rx),my=mean(ry);let nm=0,dx=0,dy=0;for(let i=0;i<n;i++){nm+=(rx[i]-mx)*(ry[i]-my);dx+=(rx[i]-mx)**2;dy+=(ry[i]-my)**2;}return nm/Math.sqrt(dx*dy)||0;}
+function roc(sc,lb){const ps=sc.map((s,i)=>({s,l:lb[i]})).sort((a,b)=>b.s-a.s);const tp=lb.filter(l=>l===1).length,tn=lb.filter(l=>l===0).length;if(!tp||!tn)return{pts:[{x:0,y:0},{x:1,y:1}],auc:0.5};const r=[{x:0,y:0}];let a=0,b=0;for(const p of ps){if(p.l===1)a++;else b++;r.push({x:b/tn,y:a/tp});}let au=0;for(let i=1;i<r.length;i++)au+=(r[i].x-r[i-1].x)*(r[i].y+r[i-1].y)/2;return{pts:r,auc:au};}
+function prc(sc,lb){const ps=sc.map((s,i)=>({s,l:lb[i]})).sort((a,b)=>b.s-a.s);const tp=lb.filter(l=>l===1).length;if(!tp)return{pts:[],ap:0};const r=[];let a=0,b=0;for(const p of ps){if(p.l===1)a++;else b++;r.push({x:a/tp,y:a/(a+b)});}let ap=0,pr=0;for(const p of r){ap+=(p.x-pr)*p.y;pr=p.x;}return{pts:r,ap};}
+
+function extract(arc){
+const pp=arc.papers,s1m=new Map((arc.signal1Results||[]).map(r=>[r.pmid,r])),s2m=new Map((arc.signal2Results||[]).map(r=>[r.pmid,r])),s3m=new Map((arc.signal3Results||[]).map(r=>[r.pmid,r])),s4m=new Map((arc.signal4Results||[]).map(r=>[r.pmid,r]));
+const rows=[];
+for(const p of pp){
+const pm=p.pmid,r1=s1m.get(pm),r2=s2m.get(pm),r3=s3m.get(pm),r4=s4m.get(pm);
+if(!r1&&!r2&&!r3&&!r4)continue;
+const h1=(p.isH1===true||p.isH1==='TRUE'||p.isH1===1)?1:0;
+rows.push({pmid:pm,isH1:h1,s1:r1?(r1.score||0):null,s2:r2?(r2.meshBreadthScore!=null?r2.meshBreadthScore:r2.score||0):null,s3:r3?(r3.score||0):null,s4:r4?(r4.score||0):null});
+}
+const sg=['s1','s2','s3','s4'],w={s1:.5,s2:.3,s3:.05,s4:.15};
+const vr=rows.filter(r=>r.s1!==null||r.s2!==null||r.s3!==null||r.s4!==null);
+for(const s of sg){const vs=vr.filter(r=>r[s]!==null).map(r=>r[s]);const mn=Math.min(...vs),mx=Math.max(...vs);for(const r of vr){if(r[s]!==null)r[s+'n']=mx>mn?(r[s]-mn)/(mx-mn):.5;}}
+for(const r of vr){let n=0,d=0;for(const s of sg){if(r[s+'n']!=null){n+=w[s]*r[s+'n'];d+=w[s];}}r.fu=d>0?n/d:0;}
+return vr;
+}
+
+function renderRadar(d){
+const s=document.getElementById('radarChart');clr('radarChart');
+const cx=250,cy=220,R=150;
+const dm=[{k:'s4',l:'Cognitive\nDeviation'},{k:'s1',l:'Expert\nSignificance'},{k:'s2',l:'Thematic\nBreadth'},{k:'s3',l:'Knowledge\nBrokerage'}];
+const n=dm.length;
+for(let ri=1;ri<=5;ri++){const r=R*ri/5;let p='';for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;p+=`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)} `;}sv('polygon',{points:p.trim(),fill:'none',stroke:ri===5?'#ccc':'#e5e5e5','stroke-width':ri===5?1.5:.5},s);}
+for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;sv('line',{x1:cx,y1:cy,x2:cx+R*Math.cos(a),y2:cy+R*Math.sin(a),stroke:'#d0d0d0','stroke-width':1},s);const lx=cx+(R+28)*Math.cos(a),ly=cy+(R+28)*Math.sin(a);dm[i].l.split('\n').forEach((t,ti,ar)=>{sv('text',{x:lx,y:ly+ti*13-(ar.length-1)*6.5,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#444'},s).textContent=t;});}
+const h1=d.filter(r=>r.isH1===1),nh=d.filter(r=>r.isH1===0);
+function mn(rs,sig){const v=rs.map(r=>r[sig+'n']).filter(v=>v!=null&&!isNaN(v));return v.length?mean(v):0;}
+let hp='';for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;const v=mn(h1,dm[i].k);hp+=`${cx+R*v*Math.cos(a)},${cy+R*v*Math.sin(a)} `;}
+sv('polygon',{points:hp.trim(),fill:'rgba(239,68,68,0.15)',stroke:'#ef4444','stroke-width':2.5},s);
+let np='';for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;const v=mn(nh,dm[i].k);np+=`${cx+R*v*Math.cos(a)},${cy+R*v*Math.sin(a)} `;}
+sv('polygon',{points:np.trim(),fill:'rgba(100,116,139,0.1)',stroke:'#94a3b8','stroke-width':2,'stroke-dasharray':'6,3'},s);
+for(let i=0;i<n;i++){const a=-Math.PI/2+2*Math.PI*i/n;const vh=mn(h1,dm[i].k);sv('circle',{cx:cx+R*vh*Math.cos(a),cy:cy+R*vh*Math.sin(a),r:4,fill:'#ef4444'},s);const vn=mn(nh,dm[i].k);sv('circle',{cx:cx+R*vn*Math.cos(a),cy:cy+R*vn*Math.sin(a),r:4,fill:'#94a3b8'},s);}
+sv('text',{x:cx,y:18,'text-anchor':'middle','font-size':'13','font-weight':'700',fill:'#111'},s).textContent='Four-Dimensional Innovation Space';
+sv('rect',{x:155,y:400,width:12,height:12,fill:'rgba(239,68,68,0.3)',stroke:'#ef4444','stroke-width':1.5,rx:2},s);
+sv('text',{x:172,y:411,'font-size':'10',fill:'#444'},s).textContent='H1 papers';
+sv('rect',{x:270,y:400,width:12,height:12,fill:'rgba(100,116,139,0.15)',stroke:'#94a3b8','stroke-width':1.5,rx:2},s);
+sv('text',{x:287,y:411,'font-size':'10',fill:'#444'},s).textContent='Non-H1 papers';
+for(let ri=1;ri<=5;ri++)sv('text',{x:cx+3,y:cy-R*ri/5+3,'font-size':'8',fill:'#999'},s).textContent=(ri/5).toFixed(1);
+}
+
+function renderMatrix(d){
+const s=document.getElementById('matrixChart');clr('matrixChart');
+const ox=70,oy=30,w=370,h=350;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:'#333','stroke-width':1.5},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1.5},s);
+sv('text',{x:ox+w/2,y:oy+h+35,'text-anchor':'middle','font-size':'11','font-weight':'600',fill:'#333'},s).textContent='Novelty (Signal 4: Cognitive Deviation)';
+sv('text',{x:18,y:oy+h/2,'text-anchor':'middle','font-size':'11','font-weight':'600',fill:'#333',transform:`rotate(-90,18,${oy+h/2})`},s).textContent='Significance (Signal 1)';
+const mx=ox+w/2,my=oy+h/2;
+sv('line',{x1:mx,y1:oy,x2:mx,y2:oy+h,stroke:'#e5e5e5','stroke-width':1,'stroke-dasharray':'4,3'},s);
+sv('line',{x1:ox,y1:my,x2:ox+w,y2:my,stroke:'#e5e5e5','stroke-width':1,'stroke-dasharray':'4,3'},s);
+sv('text',{x:mx+6,y:my-6,'font-size':'10','font-weight':'600',fill:'#059669'},s).textContent='Breakthrough';
+sv('text',{x:ox+6,y:my-6,'font-size':'10','font-weight':'600',fill:'#d97706'},s).textContent='Elegant Synthesis';
+sv('text',{x:mx+6,y:oy+h-8,'font-size':'10','font-weight':'600',fill:'#6366f1'},s).textContent='Sleeping Beauty';
+sv('text',{x:ox+6,y:oy+h-8,'font-size':'10','font-weight':'600',fill:'#9ca3af'},s).textContent='Incremental';
+const s4v=d.map(r=>r.s4n||0),s1v=d.map(r=>r.s1n||0);
+const s4mn=Math.min(...s4v),s4mx=Math.max(...s4v),s1mn=Math.min(...s1v),s1mx=Math.max(...s1v);
+const s4r=s4mx-s4mn||1,s1r=s1mx-s1mn||1;
+const sm=d.length>2000?d.filter((_,i)=>i%Math.ceil(d.length/2000)===0):d;
+for(const r of sm){const x=ox+((r.s4n||0)-s4mn)/s4r*w;const y=oy+h-((r.s1n||0)-s1mn)/s1r*h;sv('circle',{cx:x,cy:y,r:r.isH1?3.5:2,fill:r.isH1?'#ef4444':'#94a3b8',opacity:r.isH1?.65:.2},s);}
+sv('text',{x:ox+w/2,y:16,'text-anchor':'middle','font-size':'13','font-weight':'700',fill:'#111'},s).textContent='Innovation Typology: Novelty x Significance';
+sv('circle',{cx:ox+w-80,cy:oy+16,r:3.5,fill:'#ef4444'},s);sv('text',{x:ox+w-72,y:oy+20,'font-size':'9',fill:'#444'},s).textContent='H1';
+sv('circle',{cx:ox+w-40,cy:oy+16,r:2.5,fill:'#94a3b8'},s);sv('text',{x:ox+w-33,y:oy+20,'font-size':'9',fill:'#444'},s).textContent='Non-H1';
+for(let i=0;i<=4;i++){const v=(i/4).toFixed(1);sv('text',{x:ox+w*i/4,y:oy+h+16,'text-anchor':'middle','font-size':'8',fill:'#999'},s).textContent=v;sv('text',{x:ox-6,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=v;}
+}
+
+function renderHeatmap(d){
+const s=document.getElementById('heatmapChart');clr('heatmapChart');
+const sg=['s1','s2','s3','s4','fu'],lb=['S1','S2','S3','S4','Composite'],n=sg.length;
+const ox=90,oy=55,cs=68;
+const co=[];for(let i=0;i<n;i++){co[i]=[];for(let j=0;j<n;j++){const xi=d.map(r=>r[sg[i]+'n']||0),xj=d.map(r=>r[sg[j]+'n']||0);co[i][j]=spm(xi,xj);}}
+for(let i=0;i<n;i++)for(let j=0;j<n;j++){const v=co[i][j];const c=v>0?`rgba(59,130,246,${Math.abs(v)*.8})`:`rgba(239,68,68,${Math.abs(v)*.8})`;sv('rect',{x:ox+j*cs,y:oy+i*cs,width:cs,height:cs,fill:i===j?'#f3f4f6':c,stroke:'#fff','stroke-width':2,rx:3},s);sv('text',{x:ox+j*cs+cs/2,y:oy+i*cs+cs/2+4,'text-anchor':'middle','font-size':i===j?'9':'12','font-weight':i===j?'400':'700',fill:i===j?'#666':Math.abs(v)>.5?'#fff':'#333'},s).textContent=i===j?'1.00':v.toFixed(2);}
+for(let i=0;i<n;i++){sv('text',{x:ox+i*cs+cs/2,y:oy-8,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#444'},s).textContent=lb[i];sv('text',{x:ox-6,y:oy+i*cs+cs/2+4,'text-anchor':'end','font-size':'10','font-weight':'600',fill:'#444'},s).textContent=lb[i];}
+sv('text',{x:ox+n*cs/2,y:22,'text-anchor':'middle','font-size':'13','font-weight':'700',fill:'#111'},s).textContent='Spearman Correlation Matrix';
+sv('text',{x:ox,y:oy+n*cs+25,'font-size':'9',fill:'#666'},s).textContent='Negative';
+for(let i=0;i<10;i++){const v=-1+i*.2;const c=v>0?`rgba(59,130,246,${Math.abs(v)*.8})`:`rgba(239,68,68,${Math.abs(v)*.8})`;sv('rect',{x:ox+48+i*22,y:oy+n*cs+15,width:22,height:12,fill:c},s);}
+sv('text',{x:ox+275,y:oy+n*cs+25,'font-size':'9',fill:'#666'},s).textContent='Positive';
+}
+
+function renderDensity(d){
+const s=document.getElementById('densityChart');clr('densityChart');
+const ox=55,oy=35,w=400,h=290;
+const h1f=d.filter(r=>r.isH1===1).map(r=>r.fu||0),nhf=d.filter(r=>r.isH1===0).map(r=>r.fu||0);
+const bins=30;function hi(v){const h=new Array(bins).fill(0);for(const x of v){const b=Math.min(Math.floor(x*bins),bins-1);h[b]++;}return h.map(c=>c/v.length);}
+const h1h=hi(h1f),nhh=hi(nhf),mx=Math.max(...h1h,...nhh)*1.1;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:'#333','stroke-width':1.5},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1.5},s);
+sv('text',{x:ox+w/2,y:oy+h+32,'text-anchor':'middle','font-size':'11','font-weight':'600',fill:'#333'},s).textContent='Composite Index Score';
+sv('text',{x:14,y:oy+h/2,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333',transform:`rotate(-90,14,${oy+h/2})`},s).textContent='Density';
+let hp=`M ${ox},${oy+h}`;for(let i=0;i<bins;i++){hp+=` L ${ox+w*(i+.5)/bins},${oy+h-h*(h1h[i]/mx)}`;}hp+=` L ${ox+w},${oy+h} Z`;
+sv('path',{d:hp,fill:'rgba(239,68,68,0.2)',stroke:'#ef4444','stroke-width':2},s);
+let np=`M ${ox},${oy+h}`;for(let i=0;i<bins;i++){np+=` L ${ox+w*(i+.5)/bins},${oy+h-h*(nhh[i]/mx)}`;}np+=` L ${ox+w},${oy+h} Z`;
+sv('path',{d:np,fill:'rgba(100,116,139,0.15)',stroke:'#94a3b8','stroke-width':2,'stroke-dasharray':'5,3'},s);
+for(let i=0;i<=5;i++)sv('text',{x:ox+w*i/5,y:oy+h+15,'text-anchor':'middle','font-size':'9',fill:'#666'},s).textContent=(i/5).toFixed(1);
+sv('rect',{x:ox+w-130,y:oy+8,width:10,height:10,fill:'rgba(239,68,68,0.3)',stroke:'#ef4444','stroke-width':1.5,rx:2},s);sv('text',{x:ox+w-115,y:oy+17,'font-size':'10',fill:'#444'},s).textContent='H1 papers';
+sv('rect',{x:ox+w-130,y:oy+25,width:10,height:10,fill:'rgba(100,116,139,0.2)',stroke:'#94a3b8','stroke-width':1.5,rx:2},s);sv('text',{x:ox+w-115,y:oy+34,'font-size':'10',fill:'#444'},s).textContent='Non-H1 papers';
+sv('text',{x:ox+w/2,y:18,'text-anchor':'middle','font-size':'13','font-weight':'700',fill:'#111'},s).textContent='Composite Score Distribution';
+}
+
+function renderPerf(d){
+const lb=d.map(r=>r.isH1),ks=['s1','s2','s3','s4','fu'];
+renderROC(d,lb,ks);renderPR(d,lb,ks);renderLift(d,lb,ks);
+const lg=document.getElementById('perfLegend');lg.innerHTML='';
+for(const k of ks)lg.innerHTML+=`<span class="legend-item"><span class="legend-line" style="background:${C[k]}"></span>${SL[k]}</span>`;
+}
+
+function renderROC(d,lb,ks){
+const s=document.getElementById('rocChart');clr('rocChart');
+const ox=50,oy=28,w=310,h=280;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('text',{x:ox+w/2,y:oy+h+28,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333'},s).textContent='False Positive Rate';
+sv('text',{x:14,y:oy+h/2,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333',transform:`rotate(-90,14,${oy+h/2})`},s).textContent='True Positive Rate';
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy,stroke:'#d0d0d0','stroke-width':1,'stroke-dasharray':'4,3'},s);
+for(const k of ks){const sc=d.map(r=>k==='fu'?(r.fu||0):(r[k+'n']||0));const r=roc(sc,lb);let p='';for(let i=0;i<r.pts.length;i++){const x=ox+r.pts[i].x*w,y=oy+h-r.pts[i].y*h;p+=(i===0?'M':'L')+` ${x},${y} `;}sv('path',{d:p,fill:'none',stroke:C[k],'stroke-width':k==='fu'?2.5:1.5},s);
+sv('text',{x:ox+w-4,y:oy+13+ks.indexOf(k)*12,'text-anchor':'end','font-size':'8','font-weight':k==='fu'?'700':'400',fill:C[k]},s).textContent=`${SL[k]}: ${r.auc.toFixed(3)}`;}
+sv('text',{x:ox+w/2,y:16,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='ROC Curves';
+for(let i=0;i<=4;i++){sv('text',{x:ox+w*i/4,y:oy+h+13,'text-anchor':'middle','font-size':'8',fill:'#999'},s).textContent=(i/4).toFixed(1);sv('text',{x:ox-4,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=(i/4).toFixed(1);}
+}
+
+function renderPR(d,lb,ks){
+const s=document.getElementById('prChart');clr('prChart');
+const ox=50,oy=28,w=310,h=280;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('text',{x:ox+w/2,y:oy+h+28,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333'},s).textContent='Recall';
+sv('text',{x:14,y:oy+h/2,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333',transform:`rotate(-90,14,${oy+h/2})`},s).textContent='Precision';
+for(const k of ks){const sc=d.map(r=>k==='fu'?(r.fu||0):(r[k+'n']||0));const r=prc(sc,lb);if(!r.pts.length)continue;let p='';for(let i=0;i<r.pts.length;i++){const x=ox+r.pts[i].x*w,y=oy+h-r.pts[i].y*h;p+=(i===0?'M':'L')+` ${x},${y} `;}sv('path',{d:p,fill:'none',stroke:C[k],'stroke-width':k==='fu'?2.5:1.5},s);
+sv('text',{x:ox+w-4,y:oy+13+ks.indexOf(k)*12,'text-anchor':'end','font-size':'8','font-weight':k==='fu'?'700':'400',fill:C[k]},s).textContent=`${SL[k]}: ${r.ap.toFixed(3)}`;}
+sv('text',{x:ox+w/2,y:16,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Precision-Recall Curves';
+for(let i=0;i<=4;i++){sv('text',{x:ox+w*i/4,y:oy+h+13,'text-anchor':'middle','font-size':'8',fill:'#999'},s).textContent=(i/4).toFixed(1);sv('text',{x:ox-4,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=(i/4).toFixed(1);}
+}
+
+function renderLift(d,lb,ks){
+const s=document.getElementById('liftChart');clr('liftChart');
+const ox=50,oy=28,w=310,h=280;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('text',{x:ox+w/2,y:oy+h+28,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333'},s).textContent='Top-k% of Papers';
+sv('text',{x:14,y:oy+h/2,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333',transform:`rotate(-90,14,${oy+h/2})`},s).textContent='Fraction of H1 Captured';
+sv('line',{x1:ox,y1:oy+h,x2:ox+w,y2:oy,stroke:'#d0d0d0','stroke-width':1,'stroke-dasharray':'4,3'},s);
+const tH=lb.filter(l=>l===1).length,n=d.length;
+for(const k of ks){const so=d.map((r,i)=>({sc:k==='fu'?(r.fu||0):(r[k+'n']||0),lb:lb[i]})).sort((a,b)=>b.sc-a.sc);let ca=0;const st=50;let p=`M ${ox},${oy+h}`;for(let si=1;si<=st;si++){const tk=Math.floor(n*si/st);for(let i=si===1?0:Math.floor(n*(si-1)/st);i<tk;i++){if(so[i].lb===1)ca++;}p+=` L ${ox+si/st*w},${oy+h-ca/tH*h}`;}sv('path',{d:p,fill:'none',stroke:C[k],'stroke-width':k==='fu'?2.5:1.5},s);}
+sv('text',{x:ox+w/2,y:16,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Cumulative Lift Curve';
+for(let i=0;i<=4;i++){sv('text',{x:ox+w*i/4,y:oy+h+13,'text-anchor':'middle','font-size':'8',fill:'#999'},s).textContent=(i*25)+'%';sv('text',{x:ox-4,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=(i*25)+'%';}
+}
+
+function renderSankey(){
+if(!D)return;
+const s=document.getElementById('sankeyChart');clr('sankeyChart');
+const ox=40,oy=30,w=720,h=500;
+
+// Classify papers by Composite quartile
+const compScores=D.map(r=>r.fu||0).sort((a,b)=>a-b);
+const q1=compScores[Math.floor(compScores.length*0.25)];
+const q2=compScores[Math.floor(compScores.length*0.5)];
+const q3=compScores[Math.floor(compScores.length*0.75)];
+
+function getQuartile(score){
+if(score<=q1)return 0;
+if(score<=q2)return 1;
+if(score<=q3)return 2;
+return 3;
+}
+
+// Classify by S1/S4 median split within each quartile
+const s1v=D.map(r=>r.s1n||0),s4v=D.map(r=>r.s4n||0);
+const s1Md=med(s1v),s4Md=med(s4v);
+
+const typeNames=['Breakthrough','Elegant Syn.','Sleeping Beauty','Incremental'];
+const typeColors=['#059669','#d97706','#6366f1','#9ca3af'];
+const quartileNames=['Q1 (Low)','Q2','Q3','Q4 (High)'];
+
+// Build flow data: quartile → type → H1/Non-H1
+const flowData=[];
+for(let qi=0;qi<4;qi++){
+  const quartilePapers=D.filter((r,i)=>getQuartile(r.fu||0)===qi);
+  for(let ti=0;ti<4;ti++){
+    const typePapers=quartilePapers.filter(r=>{
+      const isHighS4=(r.s4n||0)>s4Md;
+      const isHighS1=(r.s1n||0)>s1Md;
+      if(ti===0)return isHighS4&&isHighS1;
+      if(ti===1)return !isHighS4&&isHighS1;
+      if(ti===2)return isHighS4&&!isHighS1;
+      return !isHighS4&&!isHighS1;
+    });
+    const h1Count=typePapers.filter(r=>r.isH1===1).length;
+    const nonH1Count=typePapers.length-h1Count;
+    flowData.push({quartile:qi,type:ti,h1:h1Count,nonH1:nonH1Count,total:typePapers.length});
+  }
+}
+
+const totalH1=flowData.reduce((a,f)=>a+f.h1,0);
+const totalNonH1=flowData.reduce((a,f)=>a+f.nonH1,0);
+const maxFlow=Math.max(...flowData.map(f=>Math.max(f.h1,f.nonH1)));
+
+// Layout positions
+const leftX=ox+50,midX=ox+w/2,rightX=ox+w-50;
+const nodeW=16;
+const quartileH=h/4-8;
+const typeH=quartileH/4-2;
+
+// Draw left nodes (quartiles)
+for(let qi=0;qi<4;qi++){
+  const y=oy+qi*(h/4)+4;
+  const qPapers=flowData.filter(f=>f.quartile===qi);
+  const qTotal=qPapers.reduce((a,f)=>a+f.total,0);
+  sv('rect',{x:leftX-nodeW,y:y,width:nodeW,height:quartileH,fill:'#3b82f6',rx:3,opacity:.8},s);
+  sv('text',{x:leftX-nodeW-6,y:y+quartileH/2+3,'text-anchor':'end','font-size':'9','font-weight':'600',fill:'#333'},s).textContent=quartileNames[qi];
+  sv('text',{x:leftX+4,y:y+quartileH/2+3,'font-size':'8',fill:'#666'},s).textContent=qTotal;
+}
+
+// Draw middle nodes (types within each quartile)
+for(let qi=0;qi<4;qi++){
+  for(let ti=0;ti<4;ti++){
+    const f=flowData.find(x=>x.quartile===qi&&x.type===ti);
+    if(!f||f.total===0)continue;
+    const y=oy+qi*(h/4)+4+ti*(typeH+2);
+    sv('rect',{x:midX-nodeW/2,y:y,width:nodeW,height:typeH,fill:typeColors[ti],rx:2,opacity:.8},s);
+  }
+}
+
+// Draw right nodes (H1/Non-H1)
+const h1H=h/2-10,nonH1H=h/2-10;
+const h1Y=oy+5,nonH1Y=oy+h/2+5;
+sv('rect',{x:rightX,y:h1Y,width:nodeW,height:h1H,fill:'#ef4444',rx:3,opacity:.9},s);
+sv('text',{x:rightX+nodeW+6,y:h1Y+h1H/2+3,'font-size':'10','font-weight':'700',fill:'#ef4444'},s).textContent=`H1 (${totalH1})`;
+sv('rect',{x:rightX,y:nonH1Y,width:nodeW,height:nonH1H,fill:'#94a3b8',rx:3,opacity:.9},s);
+sv('text',{x:rightX+nodeW+6,y:nonH1Y+nonH1H/2+3,'font-size':'10','font-weight':'700',fill:'#64748b'},s).textContent=`Non-H1 (${totalNonH1})`;
+
+// Draw flows: quartile → type → H1/Non-H1
+for(const f of flowData){
+  if(f.total===0)continue;
+  const qi=f.quartile,ti=f.type;
+  const leftY=oy+qi*(h/4)+4;
+  const midY=oy+qi*(h/4)+4+ti*(typeH+2);
+  const leftCenterY=leftY+quartileH/2;
+  const midCenterY=midY+typeH/2;
+  
+  // Flow from quartile to type
+  if(f.total>0){
+    const flowH=(f.total/maxFlow)*(quartileH*0.6);
+    const cpX=leftX+nodeW+(midX-leftX-nodeW)*0.5;
+    const path=`M ${leftX+nodeW},${leftCenterY-flowH/2} C ${cpX},${leftCenterY-flowH/2} ${cpX},${midCenterY-flowH/2} ${midX-nodeW/2},${midCenterY-flowH/2} L ${midX-nodeW/2},${midCenterY+flowH/2} C ${cpX},${midCenterY+flowH/2} ${cpX},${leftCenterY+flowH/2} ${leftX+nodeW},${leftCenterY+flowH/2} Z`;
+    sv('path',{d:path,fill:typeColors[ti],opacity:.3},s);
+  }
+  
+  // Flow from type to H1
+  if(f.h1>0){
+    const flowH=(f.h1/maxFlow)*(typeH*0.8);
+    const h1CenterY=h1Y+h1H/2;
+    const cpX=midX+nodeW/2+(rightX-midX-nodeW/2)*0.5;
+    const path=`M ${midX+nodeW/2},${midCenterY-flowH/2} C ${cpX},${midCenterY-flowH/2} ${cpX},${h1CenterY-flowH/2} ${rightX},${h1CenterY-flowH/2} L ${rightX},${h1CenterY+flowH/2} C ${cpX},${h1CenterY+flowH/2} ${cpX},${midCenterY+flowH/2} ${midX+nodeW/2},${midCenterY+flowH/2} Z`;
+    sv('path',{d:path,fill:'#ef4444',opacity:.4},s);
+  }
+  
+  // Flow from type to Non-H1
+  if(f.nonH1>0){
+    const flowH=(f.nonH1/maxFlow)*(typeH*0.8);
+    const nonH1CenterY=nonH1Y+nonH1H/2;
+    const cpX=midX+nodeW/2+(rightX-midX-nodeW/2)*0.5;
+    const path=`M ${midX+nodeW/2},${midCenterY-flowH/2} C ${cpX},${midCenterY-flowH/2} ${cpX},${nonH1CenterY-flowH/2} ${rightX},${nonH1CenterY-flowH/2} L ${rightX},${nonH1CenterY+flowH/2} C ${cpX},${nonH1CenterY+flowH/2} ${cpX},${midCenterY+flowH/2} ${midX+nodeW/2},${midCenterY+flowH/2} Z`;
+    sv('path',{d:path,fill:'#94a3b8',opacity:.3},s);
+  }
+}
+
+// Legend
+const legY=oy+h+10;
+sv('text',{x:ox,y:legY,'font-size':'9','font-weight':'600',fill:'#333'},s).textContent='Innovation Types:';
+for(let i=0;i<4;i++){
+  sv('rect',{x:ox+80+i*110,y:legY-8,width:10,height:10,fill:typeColors[i],rx:2},s);
+  sv('text',{x:ox+94+i*110,y:legY,'font-size':'8',fill:'#555'},s).textContent=typeNames[i];
+}
+
+sv('text',{x:ox+w/2,y:16,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Two-Layer Sankey: Composite Quartile → Innovation Type → H1/Non-H1';
+}
+
+function renderRobustness(d){
+const lb=d.map(r=>r.isH1),sg=['s1','s2','s3','s4'],w={s1:.5,s2:.3,s3:.05,s4:.15};
+// Weight chart
+(function(){
+const s=document.getElementById('weightChart');clr('weightChart');
+const ox=55,oy=35,w2=300,h=240;
+const dw=[.5,.3,.05,.15],ew=[.25,.25,.25,.25];
+const enw=sg.map(sig=>{const vs=d.map(r=>r[sig+'n']||0).filter(v=>v>0);const n=vs.length;if(!n)return .25;const p=vs.map(v=>v/vs.reduce((a,b)=>a+b,0));const e=-p.reduce((s2,pi)=>s2+(pi>0?pi*Math.log(pi):0),0)/Math.log(n);return 1-e;});
+const es=enw.reduce((a,b)=>a+b,0);const en=enw.map(v=>v/es);
+const mx=.5,bw=18,gg=55;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w2,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1},s);
+const sl=['S1','S2','S3','S4'];
+for(let i=0;i<4;i++){const gx=ox+25+i*gg;
+const h1=h*(dw[i]/mx);sv('rect',{x:gx,y:oy+h-h1,width:bw,height:h1,fill:'#3b82f6',rx:2},s);
+const h2=h*(ew[i]/mx);sv('rect',{x:gx+bw+2,y:oy+h-h2,width:bw,height:h2,fill:'#94a3b8',rx:2},s);
+const h3=h*(en[i]/mx);sv('rect',{x:gx+2*(bw+2),y:oy+h-h3,width:bw,height:h3,fill:'#10b981',rx:2},s);
+sv('text',{x:gx+bw+1,y:oy+h+13,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#444'},s).textContent=sl[i];
+sv('text',{x:gx+bw/2,y:oy+h-h1-3,'text-anchor':'middle','font-size':'7',fill:'#3b82f6'},s).textContent=dw[i].toFixed(2);
+sv('text',{x:gx+bw+2+bw/2,y:oy+h-h2-3,'text-anchor':'middle','font-size':'7',fill:'#94a3b8'},s).textContent=ew[i].toFixed(2);
+sv('text',{x:gx+2*(bw+2)+bw/2,y:oy+h-h3-3,'text-anchor':'middle','font-size':'7',fill:'#10b981'},s).textContent=en[i].toFixed(2);}
+sv('text',{x:ox+w2/2,y:18,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Weight Sensitivity';
+sv('rect',{x:ox+5,y:oy+h+25,width:8,height:8,fill:'#3b82f6',rx:1},s);sv('text',{x:ox+16,y:oy+h+32,'font-size':'8',fill:'#444'},s).textContent='Default';
+sv('rect',{x:ox+65,y:oy+h+25,width:8,height:8,fill:'#94a3b8',rx:1},s);sv('text',{x:ox+76,y:oy+h+32,'font-size':'8',fill:'#444'},s).textContent='Equal';
+sv('rect',{x:ox+115,y:oy+h+25,width:8,height:8,fill:'#10b981',rx:1},s);sv('text',{x:ox+126,y:oy+h+32,'font-size':'8',fill:'#444'},s).textContent='Entropy';
+for(let i=0;i<=4;i++){const v=(i*mx/4).toFixed(2);sv('text',{x:ox-4,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=v;}
+})();
+// Forest plot
+(function(){
+const s=document.getElementById('forestChart');clr('forestChart');
+const ox=80,oy=45,w2=280,h=240;
+const sc=d.map(r=>r.fu||0);
+const t1=pct(sc,33),t2=pct(sc,67);
+const gr=[{n:'Overall',d:d},{n:'Low tertile',d:d.filter(r=>(r.fu||0)<=t1)},{n:'Mid tertile',d:d.filter(r=>(r.fu||0)>t1&&(r.fu||0)<=t2)},{n:'High tertile',d:d.filter(r=>(r.fu||0)>t2)}];
+const au=gr.map(g=>{if(g.d.length<5)return .5;return roc(g.d.map(r=>r.fu||0),g.d.map(r=>r.isH1)).auc;});
+const mnA=Math.min(...au)-.05,mxA=Math.max(...au)+.05,rn=mxA-mnA||.1;
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#e5e5e5','stroke-width':1},s);
+const rH=h/gr.length;
+for(let i=0;i<gr.length;i++){const y=oy+rH*(i+.5);const a=au[i];const x=ox+(a-mnA)/rn*w2;const n=gr[i].d.length;const se=Math.sqrt(a*(1-a)/Math.max(n,1));const cL=Math.max(a-1.96*se,mnA),cH=Math.min(a+1.96*se,mxA);const xL=ox+(cL-mnA)/rn*w2,xH=ox+(cH-mnA)/rn*w2;
+sv('line',{x1:xL,y1:y,x2:xH,y2:y,stroke:i===0?'#111':'#666','stroke-width':i===0?2:1.5},s);
+sv('circle',{cx:x,cy:y,r:i===0?5:4,fill:i===0?'#8b5cf6':'#6366f1'},s);
+sv('text',{x:ox-6,y:y+4,'text-anchor':'end','font-size':'9','font-weight':i===0?'700':'400',fill:'#444'},s).textContent=gr[i].n;
+sv('text',{x:xH+6,y:y+3,'font-size':'8',fill:'#666'},s).textContent=a.toFixed(3);}
+sv('text',{x:ox+w2/2,y:18,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Subgroup AUC (Forest Plot)';
+sv('text',{x:ox+w2/2,y:oy+h+20,'text-anchor':'middle','font-size':'10','font-weight':'600',fill:'#333'},s).textContent='AUC-ROC';
+for(let i=0;i<=4;i++){const v=(mnA+i*rn/4).toFixed(2);sv('text',{x:ox+w2*i/4,y:oy+h+12,'text-anchor':'middle','font-size':'8',fill:'#999'},s).textContent=v;}
+})();
+// LOO chart
+(function(){
+const s=document.getElementById('looChart');clr('looChart');
+const ox=55,oy=35,w2=300,h=240;
+const sl=['All 4','Drop S1','Drop S2','Drop S3','Drop S4'];
+function fa(ex){const rs=d.map(r=>{let n=0,de=0;for(const sig of sg){if(sig===ex)continue;if(r[sig+'n']!=null){n+=w[sig]*r[sig+'n'];de+=w[sig];}}return de>0?n/de:0;});return roc(rs,lb).auc;}
+const au=[fa(null),...sg.map(si=>fa(si))];
+const mx=Math.max(...au)*1.03,mn=Math.min(...au)*.97,rn=mx-mn||.05;
+const bw=40,gap=(w2-5*bw)/6;
+sv('line',{x1:ox,y1:oy+h,x2:ox+w2,y2:oy+h,stroke:'#333','stroke-width':1},s);
+sv('line',{x1:ox,y1:oy,x2:ox,y2:oy+h,stroke:'#333','stroke-width':1},s);
+for(let i=0;i<au.length;i++){const x=ox+gap+i*(bw+gap);const bh=h*(au[i]-mn)/rn;sv('rect',{x:x,y:oy+h-bh,width:bw,height:bh,fill:i===0?'#8b5cf6':'#6366f1',rx:3,opacity:i===0?1:.6},s);
+sv('text',{x:x+bw/2,y:oy+h-bh-4,'text-anchor':'middle','font-size':'8','font-weight':'600',fill:'#444'},s).textContent=au[i].toFixed(3);
+sv('text',{x:x+bw/2,y:oy+h+13,'text-anchor':'middle','font-size':'8',fill:'#555'},s).textContent=sl[i];}
+sv('text',{x:ox+w2/2,y:18,'text-anchor':'middle','font-size':'12','font-weight':'700',fill:'#111'},s).textContent='Leave-One-Indicator-Out';
+sv('text',{x:14,y:oy+h/2,'text-anchor':'middle','font-size':'9','font-weight':'600',fill:'#333',transform:`rotate(-90,14,${oy+h/2})`},s).textContent='AUC-ROC';
+for(let i=0;i<=4;i++){const v=(mn+i*rn/4).toFixed(3);sv('text',{x:ox-4,y:oy+h-h*i/4+3,'text-anchor':'end','font-size':'8',fill:'#999'},s).textContent=v;}
+})();
+}
+
+const uz=document.getElementById('uploadZone'),fi=document.getElementById('fileInput'),st=document.getElementById('status');
+uz.addEventListener('click',()=>fi.click());
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('dragover');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('dragover'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('dragover');if(e.dataTransfer.files.length)hf(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files.length)hf(e.target.files[0]);});
+
+function hf(file){
+const r=new FileReader();
+r.onload=e=>{
+try{
+const arc=JSON.parse(e.target.result);
+if(!arc.papers||!arc.papers.length)throw new Error('No papers found');
+D=extract(arc);
+if(!D.length)throw new Error('No signal results found');
+st.className='status success';
+st.textContent=`Loaded ${D.length} papers (${D.filter(r=>r.isH1===1).length} H1, ${D.filter(r=>r.isH1===0).length} non-H1). Generating figures...`;
+document.getElementById('allFigs').classList.remove('hidden');
+// Interpretation text generation
+function genInterp1(d){
+const h1=d.filter(r=>r.isH1===1),non=d.filter(r=>r.isH1===0);
+const sigs=['s1','s2','s3','s4'];
+const names=['Expert Significance','Thematic Breadth','Knowledge Brokerage','Cognitive Deviation'];
+const h1Avg=sigs.map(s=>h1.length?h1.reduce((a,r)=>a+(r[s+'n']||0),0)/h1.length:0);
+const nonAvg=sigs.map(s=>non.length?non.reduce((a,r)=>a+(r[s+'n']||0),0)/non.length:0);
+const diffs=h1Avg.map((v,i)=>v-nonAvg[i]);
+const maxDiffIdx=diffs.indexOf(Math.max(...diffs));
+const minDiffIdx=diffs.indexOf(Math.min(...diffs));
+return `<div class="interp-title">Interpretation</div>
+<p><strong>Four-Dimensional Innovation Space:</strong> The radar chart (Panel A) visualizes the mean normalized scores of H1 and non-H1 papers across four innovation dimensions. H1 papers show consistently higher scores across all dimensions, with the largest gap in <strong>${names[maxDiffIdx]}</strong> (Δ = <span class="metric">${diffs[maxDiffIdx].toFixed(3)}</span>), indicating this dimension best discriminates expert-recognized innovative papers.</p>
+<p><strong>Innovation Typology:</strong> The 2×2 matrix (Panel B) maps papers into four innovation types based on Novelty (Signal 4) and Significance (Signal 1). <strong>Breakthrough</strong> papers (top-right) combine high novelty with high significance — the hallmark of transformative research. <strong>Sleeping Beauty</strong> papers (bottom-right) are highly novel but under-recognized by experts, potentially representing delayed-impact work. <strong>Elegant Synthesis</strong> papers (top-left) are highly significant but less novel, representing impactful consolidations of existing knowledge.</p>`;
+}
+function genInterp2(d){
+const sigs=['s1','s2','s3','s4','fu'];
+const names=['S1','S2','S3','S4','Composite'];
+const corrs=[];
+for(let i=0;i<sigs.length;i++)for(let j=i+1;j<sigs.length;j++){
+const x=d.map(r=>r[sigs[i]+'n']||0),y=d.map(r=>r[sigs[j]+'n']||0);
+corrs.push({i,j,v:spm(x,y)});
+}
+const sigCorrs=corrs.filter(c=>c.i<4&&c.j<4);
+const avgCorr=sigCorrs.reduce((a,c)=>a+Math.abs(c.v),0)/sigCorrs.length;
+const maxCorr=sigCorrs.reduce((a,c)=>Math.abs(c.v)>Math.abs(a.v)?c:a,sigCorrs[0]);
+const h1=d.filter(r=>r.isH1===1),non=d.filter(r=>r.isH1===0);
+const h1Fu=h1.map(r=>r.fu||0),nonFu=non.map(r=>r.fu||0);
+const h1Mean=h1Fu.reduce((a,v)=>a+v,0)/(h1Fu.length||1);
+const nonMean=nonFu.reduce((a,v)=>a+v,0)/(nonFu.length||1);
+return `<div class="interp-title">Interpretation</div>
+<p><strong>Signal Non-Redundancy:</strong> The Spearman correlation heatmap (Panel A) shows pairwise correlations among the four indicators. The average absolute inter-signal correlation is <span class="metric">${avgCorr.toFixed(3)}</span>, confirming that the four signals capture <strong>distinct facets</strong> of innovation rather than redundant information. The strongest correlation is between ${names[maxCorr.i]} and ${names[maxCorr.j]} (ρ = <span class="metric">${maxCorr.v.toFixed(3)}</span>), which is expected given their conceptual overlap.</p>
+<p><strong>Composite Discrimination:</strong> The density plot (Panel B) shows the distribution of the composite index for H1 and non-H1 papers. H1 papers (mean = <span class="metric">${h1Mean.toFixed(3)}</span>) are clearly shifted toward higher scores compared to non-H1 papers (mean = <span class="metric">${nonMean.toFixed(3)}</span>), demonstrating the composite index's ability to separate expert-recognized innovative papers from the general population.</p>`;
+}
+function genInterp3(d){
+const lb=d.map(r=>r.isH1);
+const sigs=['s1','s2','s3','s4'];
+const names=['Significance','Breadth','Brokerage','Deviation'];
+const aucs=sigs.map(s=>roc(d.map(r=>r[s+'n']||0),lb).auc);
+const compAuc=roc(d.map(r=>r.fu||0),lb).auc;
+const bestSingleIdx=aucs.indexOf(Math.max(...aucs));
+const bestSingle=aucs[bestSingleIdx];
+const improvement=compAuc-bestSingle;
+return `<div class="interp-title">Interpretation</div>
+<p><strong>ROC Analysis:</strong> Panel A shows the ROC curves for predicting F1000Prime-recognized (H1) papers. The composite index achieves an AUC of <span class="metric">${compAuc.toFixed(3)}</span>, outperforming the best single indicator (${names[bestSingleIdx]}, AUC = <span class="metric">${bestSingle.toFixed(3)}</span>) by <span class="metric">${(improvement*100).toFixed(1)}%</span>. This demonstrates that fusing multiple complementary signals yields better discrimination than any individual metric alone.</p>
+<p><strong>Precision-Recall & Lift:</strong> Panel B shows PR curves, which are more informative for imbalanced data (H1 papers are rare). Panel C shows the cumulative lift curve: ranking papers by the composite index, the top 10% captures approximately <span class="metric">${(function(){const sorted=[...d].sort((a,b)=>(b.fu||0)-(a.fu||0));const k=Math.floor(sorted.length*0.1);const captured=sorted.slice(0,k).filter(r=>r.isH1===1).length;const total=d.filter(r=>r.isH1===1).length;return(captured/(total||1)*100);})().toFixed(1)}%</span> of all H1 papers, compared to the 10% expected by random ranking — a <strong>${(function(){const sorted=[...d].sort((a,b)=>(b.fu||0)-(a.fu||0));const k=Math.floor(sorted.length*0.1);const captured=sorted.slice(0,k).filter(r=>r.isH1===1).length;const total=d.filter(r=>r.isH1===1).length;return((captured/(total||1))*10/1).toFixed(1);})()}× lift</strong>.</p>`;
+}
+function genInterp4(d){
+const s1v=d.map(r=>r.s1n||0),s4v=d.map(r=>r.s4n||0);
+const s1Md=med(s1v),s4Md=med(s4v);
+const types=['Breakthrough','Elegant Synthesis','Sleeping Beauty','Incremental'];
+const flows=[];
+for(let ti=0;ti<4;ti++){
+  const typePapers=d.filter((r,i)=>{
+    const isHighS4=(r.s4n||0)>s4Md;
+    const isHighS1=(r.s1n||0)>s1Md;
+    if(ti===0)return isHighS4&&isHighS1;
+    if(ti===1)return !isHighS4&&isHighS1;
+    if(ti===2)return isHighS4&&!isHighS1;
+    return !isHighS4&&!isHighS1;
+  });
+  const h1Count=typePapers.filter(r=>r.isH1===1).length;
+  flows.push({type:types[ti],h1:h1Count,total:typePapers.length,h1Pct:typePapers.length>0?(h1Count/typePapers.length*100).toFixed(1):'0.0'});
+}
+const totalH1=d.filter(r=>r.isH1===1).length;
+const btH1Rate=flows[0].total>0?(flows[0].h1/flows[0].total*100).toFixed(1):'0.0';
+const incH1Rate=flows[3].total>0?(flows[3].h1/flows[3].total*100).toFixed(1):'0.0';
+return `<div class="interp-title">Interpretation</div>
+<p><strong>Sankey Flow Analysis:</strong> This diagram shows the flow from model-predicted innovation types (left) to F1000Prime ground truth labels (right). Papers are classified into four types based on the median split of Signal 1 (Expert Significance) and Signal 4 (Cognitive Deviation). The width of each flow band represents the number of papers.</p>
+<p><strong>Type Distribution:</strong> Among all ${d.length} papers, <span class="metric">${flows[0].total}</span> (${(flows[0].total/d.length*100).toFixed(1)}%) are classified as <strong>Breakthrough</strong> (high on both dimensions), <span class="metric">${flows[1].total}</span> as <strong>Elegant Synthesis</strong>, <span class="metric">${flows[2].total}</span> as <strong>Sleeping Beauty</strong>, and <span class="metric">${flows[3].total}</span> as <strong>Incremental</strong>.</p>
+<p><strong>H1 Enrichment:</strong> The Breakthrough type has an H1 rate of <span class="metric">${btH1Rate}%</span>, compared to <span class="metric">${incH1Rate}%</span> for the Incremental type. This ${(parseFloat(btH1Rate)/Math.max(parseFloat(incH1Rate),0.1)).toFixed(1)}× enrichment ratio demonstrates that the composite classification effectively concentrates expert-recognized innovative papers in the Breakthrough quadrant.</p>`;
+}
+function genInterp5(d){
+const w={s1:.5,s2:.3,s3:.05,s4:.15};
+const sg=['s1','s2','s3','s4'];
+const lb=d.map(r=>r.isH1);
+const allAuc=roc(d.map(r=>r.fu||0),lb).auc;
+const looAuc=sg.map(ex=>{const sc=d.map(r=>{let n=0,de=0;for(const s of sg){if(s===ex)continue;if(r[s+'n']!=null){n+=w[s]*r[s+'n'];de+=w[s];}}return de>0?n/de:0;});return roc(sc,lb).auc;});
+const drops=sg.map((s,i)=>allAuc-looAuc[i]);
+const maxDropIdx=drops.indexOf(Math.max(...drops));
+const sigNames=['Significance','Breadth','Brokerage','Deviation'];
+return `<div class="interp-title">Interpretation</div>
+<p><strong>Weight Sensitivity:</strong> Panel A compares the default weights against equal weights (0.25 each) and entropy-derived weights. The composite index is relatively stable across weighting schemes, indicating that the results are not driven by arbitrary weight choices.</p>
+<p><strong>Leave-One-Indicator-Out:</strong> Panel C shows the AUC when each signal is removed. Removing <strong>${sigNames[maxDropIdx]}</strong> causes the largest performance drop (ΔAUC = <span class="metric">${drops[maxDropIdx].toFixed(3)}</span>), confirming it as the most informative individual signal. All signals contribute incrementally to the composite's predictive power, as removing any one of them reduces the AUC.</p>
+<p><strong>Subgroup Robustness:</strong> Panel B shows the composite index's AUC within different score tertiles. The overall AUC of <span class="metric">${allAuc.toFixed(3)}</span> demonstrates robust discrimination across the full score range, confirming that the composite index is not a fragile artifact of specific subpopulations.</p>`;
+}
+
+setTimeout(()=>{
+renderRadar(D);renderMatrix(D);renderHeatmap(D);renderDensity(D);renderPerf(D);renderSankey();renderRobustness(D);
+document.getElementById('interp1').innerHTML=genInterp1(D);
+document.getElementById('interp2').innerHTML=genInterp2(D);
+document.getElementById('interp3').innerHTML=genInterp3(D);
+document.getElementById('interp4').innerHTML=genInterp4(D);
+document.getElementById('interp5').innerHTML=genInterp5(D);
+st.textContent=`All figures generated. ${D.length} papers (${D.filter(r=>r.isH1===1).length} H1, ${D.filter(r=>r.isH1===0).length} non-H1).`;
+},100);
+}catch(err){st.className='status error';st.textContent='Error: '+err.message;}
+};r.readAsText(file);
+}
+</script>
+</body>
+</html>

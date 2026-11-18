@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LITMUS - Incremental Fusion Analysis</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;color:#222;padding:24px}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-bottom:20px}
+.upload{border:2px dashed #ccc;border-radius:12px;padding:40px;text-align:center;cursor:pointer;margin-bottom:24px;background:#fff;transition:border-color .2s}
+.upload:hover{border-color:#4f46e5}
+.upload p{color:#888;font-size:14px}
+.upload a{color:#4f46e5;text-decoration:none}
+.hidden{display:none}
+.panel{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.panel-title{font-size:16px;font-weight:600;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #4f46e5}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:center;border-bottom:1px solid #eee}
+th{background:#f8f9fa;font-weight:600;color:#333}
+td{color:#444}
+.positive{color:#16a34a;font-weight:600}
+.negative{color:#dc2626;font-weight:600}
+.chart-container{position:relative;width:100%;height:400px;margin:20px 0}
+svg{width:100%;height:100%}
+.legend{display:flex;gap:20px;justify-content:center;margin-top:12px;font-size:12px;color:#666}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-color{width:16px;height:12px;border-radius:2px}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:16px 0}
+.metric-card{background:#f8f9fa;border-radius:8px;padding:16px;text-align:center}
+.metric-value{font-size:24px;font-weight:700;color:#4f46e5}
+.metric-label{font-size:12px;color:#666;margin-top:4px}
+.interpretation{background:#f0f9ff;border-left:4px solid #4f46e5;padding:16px;margin-top:16px;font-size:13px;line-height:1.6;color:#333}
+.interpretation strong{color:#4f46e5}
+</style>
+</head>
+<body>
+
+<h1>Incremental Fusion Analysis</h1>
+<p class="sub">Stepwise addition of signals: S3 → +S4 → +S1 → +S2</p>
+
+<div class="upload" id="dropZone">
+  <p style="font-size:32px;margin-bottom:8px">📊</p>
+  <p>Drop archive JSON here, or <a href="#" id="browseLink">click to browse</a></p>
+  <input type="file" id="fileInput" accept=".json" style="display:none">
+</div>
+
+<div id="content" class="hidden">
+
+  <!-- Summary Table -->
+  <div class="panel">
+    <div class="panel-title">Incremental Fusion Results</div>
+    <table id="summaryTable">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Signals</th>
+          <th>AUROC</th>
+          <th>ΔAUROC</th>
+          <th>AUPRC</th>
+          <th>ΔAUPRC</th>
+          <th>P@100</th>
+          <th>ΔP@100</th>
+        </tr>
+      </thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Metrics Overview -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-value" id="finalAuroc">-</div>
+      <div class="metric-label">Final AUROC (S1+S2+S3+S4)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="totalGain">-</div>
+      <div class="metric-label">Total ΔAUROC from Baseline</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="bestStep">-</div>
+      <div class="metric-label">Largest Single-Step Gain</div>
+    </div>
+  </div>
+
+  <!-- AUROC Gain Chart -->
+  <div class="panel">
+    <div class="panel-title">Cumulative AUROC Gain</div>
+    <div class="chart-container">
+      <svg id="aurocChart"></svg>
+    </div>
+  </div>
+
+  <!-- AUPRC Gain Chart -->
+  <div class="panel">
+    <div class="panel-title">Cumulative AUPRC Gain</div>
+    <div class="chart-container">
+      <svg id="auprcChart"></svg>
+    </div>
+  </div>
+
+  <!-- P@100 Gain Chart -->
+  <div class="panel">
+    <div class="panel-title">Cumulative P@100 Gain</div>
+    <div class="chart-container">
+      <svg id="p100Chart"></svg>
+    </div>
+  </div>
+
+  <!-- Interpretation -->
+  <div class="panel">
+    <div class="panel-title">Analysis & Interpretation</div>
+    <div class="interpretation" id="interpretation"></div>
+  </div>
+
+</div>
+
+<script>
+// Utility functions
+function roc(scores,labels){
+  const n=scores.length;
+  const pairs=scores.map((s,i)=>({s,l:labels[i]})).sort((a,b)=>b.s-a.s);
+  let tp=0,fp=0,tn=0,fn=0;
+  const totalP=labels.filter(l=>l===1).length;
+  const totalN=n-totalP;
+  const pts=[];
+  let prevS=null;
+  for(let i=0;i<n;i++){
+    if(prevS!==null&&pairs[i].s!==prevS){
+      pts.push({fpr:fp/totalN,tpr:tp/totalP});
+    }
+    if(pairs[i].l===1)tp++;else fp++;
+    prevS=pairs[i].s;
+  }
+  pts.push({fpr:fp/totalN,tpr:tp/totalP});
+  let auc=0;
+  for(let i=1;i<pts.length;i++){
+    auc+=(pts[i].fpr-pts[i-1].fpr)*(pts[i].tpr+pts[i-1].tpr)/2;
+  }
+  return{auc,pts};
+}
+
+function prc(scores,labels){
+  const n=scores.length;
+  const pairs=scores.map((s,i)=>({s,l:labels[i]})).sort((a,b)=>b.s-a.s);
+  let tp=0,fp=0;
+  const totalP=labels.filter(l=>l===1).length;
+  const pts=[];
+  let prevS=null;
+  for(let i=0;i<n;i++){
+    if(pairs[i].l===1)tp++;else fp++;
+    if(prevS!==null&&pairs[i].s!==prevS){
+      const p=tp/(tp+fp);
+      const r=tp/totalP;
+      pts.push({recall:r,precision:p});
+    }
+    prevS=pairs[i].s;
+  }
+  const p=tp/(tp+fp);
+  const r=tp/totalP;
+  pts.push({recall:r,precision:p});
+  let ap=0;
+  for(let i=1;i<pts.length;i++){
+    ap+=(pts[i].recall-pts[i-1].recall)*(pts[i].precision+pts[i-1].precision)/2;
+  }
+  return{ap,pts};
+}
+
+function precisionAtK(scores,labels,k){
+  const n=scores.length;
+  const pairs=scores.map((s,i)=>({s,l:labels[i]})).sort((a,b)=>b.s-a.s);
+  const topK=pairs.slice(0,Math.min(k,n));
+  const h1Count=topK.filter(p=>p.l===1).length;
+  return h1Count/topK.length;
+}
+
+// Extract data from archive
+function extract(arc){
+  const p1=arc.signal1Results||[];
+  const p2=arc.signal2Results||[];
+  const p3=arc.signal3Results||[];
+  const p4=arc.signal4Results||[];
+  const pm=new Map();
+  for(const p of arc.papers||[])pm.set(String(p.pmid),{pmid:p.pmid,isH1:p.isH1});
+  const r1=new Map();for(const r of p1)r1.set(String(r.pmid),r);
+  const r2=new Map();for(const r of p2)r2.set(String(r.pmid),r);
+  const r3=new Map();for(const r of p3)r3.set(String(r.pmid),r);
+  const r4=new Map();for(const r of p4)r4.set(String(r.pmid),r);
+  const vr=[];
+  for(const[pmid,p]of pm){
+    const s1=r1.get(pmid),s2=r2.get(pmid),s3=r3.get(pmid),s4=r4.get(pmid);
+    if(!s1&&!s2&&!s3&&!s4)continue;
+    const h1=(p.isH1===true||p.isH1==='TRUE'||p.isH1===1)?1:0;
+    const row={pmid,isH1:h1};
+    if(s1)row.s1=s1.score!=null?s1.score:(s1.overallImportance||0);
+    if(s2)row.s2=s2.meshBreadthScore!=null?s2.meshBreadthScore:(s2.score||0);
+    if(s3)row.s3=s3.score!=null?s3.score:0;
+    if(s4)row.s4=s4.score!=null?s4.score:0;
+    vr.push(row);
+  }
+  return vr;
+}
+
+// Min-max normalize
+function normalize(values){
+  const mn=Math.min(...values);
+  const mx=Math.max(...values);
+  const range=mx-mn||1;
+  return values.map(v=>(v-mn)/range);
+}
+
+// Compute fusion score with given weights
+function computeFusion(data,weights){
+  const keys=Object.keys(weights);
+  // Get raw scores for each signal
+  const rawScores={};
+  for(const k of keys){
+    rawScores[k]=data.map(r=>r[k]||0);
+  }
+  // Normalize each signal
+  const normScores={};
+  for(const k of keys){
+    normScores[k]=normalize(rawScores[k]);
+  }
+  // Compute weighted fusion
+  const totalWeight=Object.values(weights).reduce((a,b)=>a+b,0);
+  return data.map((_,i)=>{
+    let score=0;
+    for(const k of keys){
+      score+=weights[k]*normScores[k][i];
+    }
+    return score/totalWeight;
+  });
+}
+
+// Render bar chart
+function renderBarChart(svgId,steps,values,deltas,color,title,yLabel){
+  const svg=document.getElementById(svgId);
+  const w=svg.clientWidth||800;
+  const h=svg.clientHeight||400;
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.innerHTML='';
+
+  const margin={top:40,right:40,bottom:60,left:80};
+  const chartW=w-margin.left-margin.right;
+  const chartH=h-margin.top-margin.bottom;
+
+  const maxVal=Math.max(...values)*1.1;
+  const barWidth=chartW/steps.length*0.6;
+  const gap=chartW/steps.length*0.4;
+
+  // Y-axis
+  const yScale=v=>margin.top+chartH-(v/maxVal)*chartH;
+  const yAxis=svgEl('line',{x1:margin.left,y1:margin.top,x2:margin.left,y2:margin.top+chartH,stroke:'#ccc','stroke-width':1});
+  svg.appendChild(yAxis);
+
+  // Y-axis labels
+  for(let i=0;i<=5;i++){
+    const val=maxVal*i/5;
+    const y=yScale(val);
+    const label=svgEl('text',{x:margin.left-10,y:y+4,'text-anchor':'end','font-size':11,fill:'#666'});
+    label.textContent=val.toFixed(3);
+    svg.appendChild(label);
+    const grid=svgEl('line',{x1:margin.left,y1:y,x2:margin.left+chartW,y2:y,stroke:'#eee','stroke-width':1});
+    svg.appendChild(grid);
+  }
+
+  // Y-axis title
+  const yTitle=svgEl('text',{x:20,y:margin.top+chartH/2,'text-anchor':'middle','font-size':12,fill:'#666',transform:`rotate(-90,20,${margin.top+chartH/2})`});
+  yTitle.textContent=yLabel;
+  svg.appendChild(yTitle);
+
+  // Bars and labels
+  steps.forEach((step,i)=>{
+    const x=margin.left+i*(barWidth+gap)+gap/2;
+    const val=values[i];
+    const barH=(val/maxVal)*chartH;
+    const y=yScale(val);
+
+    // Bar
+    const bar=svgEl('rect',{x:x,y:y,width:barWidth,height:barH,fill:color,rx:4,opacity:0.8});
+    svg.appendChild(bar);
+
+    // Value label
+    const valLabel=svgEl('text',{x:x+barWidth/2,y:y-8,'text-anchor':'middle','font-size':12,fill:'#333','font-weight':600});
+    valLabel.textContent=val.toFixed(3);
+    svg.appendChild(valLabel);
+
+    // Delta label
+    if(i>0){
+      const delta=deltas[i];
+      const deltaLabel=svgEl('text',{x:x+barWidth/2,y:y+barH+16,'text-anchor':'middle','font-size':11,fill:delta>=0?'#16a34a':'#dc2626','font-weight':600});
+      deltaLabel.textContent=(delta>=0?'+':'')+delta.toFixed(3);
+      svg.appendChild(deltaLabel);
+    }
+
+    // X-axis label
+    const xLabel=svgEl('text',{x:x+barWidth/2,y:margin.top+chartH+20,'text-anchor':'middle','font-size':11,fill:'#666'});
+    xLabel.textContent=step;
+    svg.appendChild(xLabel);
+  });
+
+  // Title
+  const titleEl=svgEl('text',{x:w/2,y:20,'text-anchor':'middle','font-size':14,fill:'#333','font-weight':600});
+  titleEl.textContent=title;
+  svg.appendChild(titleEl);
+}
+
+function svgEl(tag,attrs){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const[k,v]of Object.entries(attrs)){
+    el.setAttribute(k,v);
+  }
+  return el;
+}
+
+// Main render function
+function renderAll(data){
+  const labels=data.map(r=>r.isH1);
+
+  // Define incremental steps (using final weights normalized for each step)
+  // Final weights: s1=0.5, s2=0.3, s3=0.05, s4=0.15
+  const steps=[
+    {name:'S3 (Baseline)',weights:{s3:0.05}},
+    {name:'+S4',weights:{s3:0.05,s4:0.15}},
+    {name:'+S1',weights:{s3:0.05,s4:0.15,s1:0.5}},
+    {name:'+S2 (Full)',weights:{s3:0.05,s4:0.15,s1:0.5,s2:0.3}}
+  ];
+
+  const results=[];
+  for(const step of steps){
+    const scores=computeFusion(data,step.weights);
+    const r=roc(scores,labels);
+    const p=prc(scores,labels);
+    const p100=precisionAtK(scores,labels,100);
+    results.push({
+      name:step.name,
+      auroc:r.auc,
+      auprc:p.ap,
+      p100:p100
+    });
+  }
+
+  // Calculate deltas
+  for(let i=1;i<results.length;i++){
+    results[i].deltaAuroc=results[i].auroc-results[i-1].auroc;
+    results[i].deltaAuprc=results[i].auprc-results[i-1].auprc;
+    results[i].deltaP100=results[i].p100-results[i-1].p100;
+  }
+  results[0].deltaAuroc=0;
+  results[0].deltaAuprc=0;
+  results[0].deltaP100=0;
+
+  // Update summary table
+  const tbody=document.getElementById('summaryBody');
+  tbody.innerHTML='';
+  results.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td>${r.name}</td>
+      <td>${r.auroc.toFixed(3)}</td>
+      <td class="${r.deltaAuroc>=0?'positive':'negative'}">${i===0?'-':(r.deltaAuroc>=0?'+':'')+r.deltaAuroc.toFixed(3)}</td>
+      <td>${r.auprc.toFixed(3)}</td>
+      <td class="${r.deltaAuprc>=0?'positive':'negative'}">${i===0?'-':(r.deltaAuprc>=0?'+':'')+r.deltaAuprc.toFixed(3)}</td>
+      <td>${r.p100.toFixed(3)}</td>
+      <td class="${r.deltaP100>=0?'positive':'negative'}">${i===0?'-':(r.deltaP100>=0?'+':'')+r.deltaP100.toFixed(3)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Update metric cards
+  document.getElementById('finalAuroc').textContent=results[results.length-1].auroc.toFixed(3);
+  document.getElementById('totalGain').textContent='+'+(results[results.length-1].auroc-results[0].auroc).toFixed(3);
+  const maxDeltaIdx=results.slice(1).reduce((maxIdx,r,i)=>r.deltaAuroc>results[maxIdx+1].deltaAuroc?i+1:maxIdx,1);
+  document.getElementById('bestStep').textContent=`Step ${maxDeltaIdx+1} (+${results[maxDeltaIdx].deltaAuroc.toFixed(3)})`;
+
+  // Render charts
+  const stepNames=results.map(r=>r.name);
+  renderBarChart('aurocChart',stepNames,results.map(r=>r.auroc),results.map(r=>r.deltaAuroc),'#4f46e5','AUROC by Incremental Step','AUROC');
+  renderBarChart('auprcChart',stepNames,results.map(r=>r.auprc),results.map(r=>r.deltaAuprc),'#0891b2','AUPRC by Incremental Step','AUPRC');
+  renderBarChart('p100Chart',stepNames,results.map(r=>r.p100),results.map(r=>r.deltaP100),'#7c3aed','P@100 by Incremental Step','P@100');
+
+  // Generate interpretation
+  const interp=document.getElementById('interpretation');
+  const totalGain=results[results.length-1].auroc-results[0].auroc;
+  const bestStepName=results[maxDeltaIdx].name;
+  const bestStepGain=results[maxDeltaIdx].deltaAuroc;
+
+  interp.innerHTML=`
+    <strong>Baseline (S3 only):</strong> AUROC = ${results[0].auroc.toFixed(3)}, serving as the starting point.<br><br>
+    <strong>Step 2 (+S4, Cognitive Deviation):</strong> AUROC ${results[1].deltaAuroc>=0?'increased':'decreased'} by ${Math.abs(results[1].deltaAuroc).toFixed(3)} to ${results[1].auroc.toFixed(3)}. 
+    ${results[1].deltaAuroc>0.01?'Cognitive deviation adds significant complementary information to knowledge brokerage.':'Cognitive deviation provides marginal improvement over brokerage alone.'}<br><br>
+    <strong>Step 3 (+S1, LLM Impact):</strong> AUROC ${results[2].deltaAuroc>=0?'increased':'decreased'} by ${Math.abs(results[2].deltaAuroc).toFixed(3)} to ${results[2].auroc.toFixed(3)}. 
+    ${results[2].deltaAuroc>0.02?'LLM impact assessment is the strongest single contributor, substantially boosting predictive power.':'LLM impact adds moderate improvement.'}<br><br>
+    <strong>Step 4 (+S2, MeSH Breadth):</strong> AUROC ${results[3].deltaAuroc>=0?'increased':'decreased'} by ${Math.abs(results[3].deltaAuroc).toFixed(3)} to ${results[3].auroc.toFixed(3)}. 
+    ${results[3].deltaAuroc>0.01?'MeSH breadth provides additional cross-domain information.':'MeSH breadth provides minimal additional gain, suggesting redundancy with other signals.'}<br><br>
+    <strong>Total Gain:</strong> +${totalGain.toFixed(3)} AUROC from baseline to full fusion.<br><br>
+    <strong>Largest Single-Step Gain:</strong> ${bestStepName} (+${bestStepGain.toFixed(3)}), indicating this signal contributes the most unique information.
+  `;
+
+  document.getElementById('content').classList.remove('hidden');
+}
+
+// File upload handler
+document.addEventListener('DOMContentLoaded',()=>{
+  const fileInput=document.getElementById('fileInput');
+  const dropZone=document.getElementById('dropZone');
+  const browseLink=document.getElementById('browseLink');
+
+  browseLink.onclick=(e)=>{e.preventDefault();fileInput.click();};
+  dropZone.onclick=(e)=>{if(e.target!==browseLink)fileInput.click();};
+
+  fileInput.onchange=(e)=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      try{
+        const arc=JSON.parse(ev.target.result);
+        if(!arc.papers||!arc.papers.length)throw new Error('No papers found');
+        const data=extract(arc);
+        if(!data.length)throw new Error('No signal results found');
+        renderAll(data);
+      }catch(err){
+        alert('Error: '+err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  dropZone.ondragover=(e)=>{e.preventDefault();dropZone.style.borderColor='#4f46e5';};
+  dropZone.ondragleave=()=>{dropZone.style.borderColor='#ccc';};
+  dropZone.ondrop=(e)=>{
+    e.preventDefault();
+    dropZone.style.borderColor='#ccc';
+    const file=e.dataTransfer.files[0];
+    if(file&&file.name.endsWith('.json')){
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        try{
+          const arc=JSON.parse(ev.target.result);
+          if(!arc.papers||!arc.papers.length)throw new Error('No papers found');
+          const data=extract(arc);
+          if(!data.length)throw new Error('No signal results found');
+          renderAll(data);
+        }catch(err){
+          alert('Error: '+err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+});
+</script>
+</body>
+</html>

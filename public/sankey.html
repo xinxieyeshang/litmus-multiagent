@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figure 4 - Two-Layer Sankey Diagram</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff;color:#111;padding:40px 60px}
+h1{font-size:22px;font-weight:700;margin-bottom:8px}
+.sub{font-size:13px;color:#888;margin-bottom:30px}
+#chart{width:100%;overflow-x:auto}
+svg{display:block}
+.legend{display:flex;gap:24px;margin-top:20px;font-size:12px;color:#555;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-color{width:14px;height:14px;border-radius:2px}
+.note{margin-top:24px;font-size:12px;color:#888;line-height:1.6;max-width:800px}
+.upload-area{border:2px dashed #ccc;border-radius:8px;padding:40px;text-align:center;margin-bottom:30px;cursor:pointer;transition:border-color .2s}
+.upload-area:hover{border-color:#3b82f6}
+.upload-area p{color:#888;font-size:14px}
+.upload-area a{color:#3b82f6;text-decoration:underline;cursor:pointer}
+#fileInput{display:none}
+</style>
+</head>
+<body>
+<h1>Figure 4 - Innovation Typology: Two-Layer Sankey Diagram</h1>
+<p class="sub">Composite Quartile → Innovation Type (by S1 & S4) → H1/Non-H1 Ground Truth</p>
+
+<div class="upload-area" id="dropZone">
+  <p>Drop archive JSON here, or <a id="browseLink">click to browse</a></p>
+  <input type="file" id="fileInput" accept=".json">
+</div>
+
+<div id="chart"></div>
+<div class="legend" id="legend"></div>
+<div class="note" id="note"></div>
+
+<script>
+const fileInput=document.getElementById('fileInput');
+const dropZone=document.getElementById('dropZone');
+const browseLink=document.getElementById('browseLink');
+const chartDiv=document.getElementById('chart');
+const legendDiv=document.getElementById('legend');
+const noteDiv=document.getElementById('note');
+
+browseLink.onclick=()=>fileInput.click();
+dropZone.ondragover=e=>{e.preventDefault();dropZone.style.borderColor='#3b82f6'};
+dropZone.ondragleave=()=>dropZone.style.borderColor='#ccc';
+dropZone.ondrop=e=>{e.preventDefault();dropZone.style.borderColor='#ccc';if(e.dataTransfer.files.length)hf(e.dataTransfer.files[0])};
+fileInput.onchange=e=>{if(e.target.files.length)hf(e.target.files[0])};
+
+function hf(f){
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const arc=JSON.parse(ev.target.result);
+      if(!arc.papers||!arc.papers.length)throw new Error('No papers found');
+      const D=extract(arc);
+      if(!D.length)throw new Error('No signal results found');
+      renderSankey(D);
+    }catch(e){alert('Error: '+e.message)}
+  };
+  r.readAsText(f);
+}
+
+function extract(arc){
+  const m1=new Map(),m2=new Map(),m3=new Map(),m4=new Map();
+  (arc.signal1Results||[]).forEach(r=>m1.set(r.pmid,r));
+  (arc.signal2Results||[]).forEach(r=>m2.set(r.pmid,r));
+  (arc.signal3Results||[]).forEach(r=>m3.set(r.pmid,r));
+  (arc.signal4Results||[]).forEach(r=>m4.set(r.pmid,r));
+  const vr=[];
+  for(const p of arc.papers){
+    const r1=m1.get(p.pmid),r2=m2.get(p.pmid),r3=m3.get(p.pmid),r4=m4.get(p.pmid);
+    if(!r1&&!r2&&!r3&&!r4)continue;
+    const h1=(p.isH1===true||p.isH1==='TRUE'||p.isH1===1)?1:0;
+    const s1=r1?(r1.overallImportance||r1.score||0):0;
+    const s2=r2?(r2.meshBreadthScore||r2.score||0):0;
+    const s3=r3?(r3.score||0):0;
+    const s4=r4?(r4.score||0):0;
+    vr.push({pmid:p.pmid,isH1:h1,s1,s2,s3,s4});
+  }
+  // Normalize
+  const sg=['s1','s2','s3','s4'];
+  for(const s of sg){
+    const vs=vr.filter(r=>r[s]!==null).map(r=>r[s]);
+    const mn=Math.min(...vs),mx=Math.max(...vs);
+    for(const r of vr){if(r[s]!==null)r[s+'n']=mx>mn?(r[s]-mn)/(mx-mn):.5;}
+  }
+  // Composite
+  const w={s1:.5,s2:.3,s3:.05,s4:.15};
+  for(const r of vr){let n=0,d=0;for(const s of sg){if(r[s+'n']!=null){n+=w[s]*r[s+'n'];d+=w[s];}}r.fu=d>0?n/d:0;}
+  return vr;
+}
+
+function renderSankey(d){
+  const n=d.length;
+  const h1Count=d.filter(r=>r.isH1===1).length;
+  const h0Count=n-h1Count;
+
+  // Compute quartiles of composite score
+  const fus=d.map(r=>r.fu).sort((a,b)=>a-b);
+  const q1=fus[Math.floor(n*0.25)];
+  const q2=fus[Math.floor(n*0.50)];
+  const q3=fus[Math.floor(n*0.75)];
+
+  // Classify each paper into quartile and innovation type
+  const types=['Breakthrough','Elegant Synthesis','Sleeping Beauty','Incremental'];
+  const quartiles=['Q1 (Low)','Q2','Q3','Q4 (High)'];
+
+  // Compute medians of S1 and S4
+  const s1s=d.map(r=>r.s1).sort((a,b)=>a-b);
+  const s4s=d.map(r=>r.s4).sort((a,b)=>a-b);
+  const s1Med=s1s[Math.floor(n/2)];
+  const s4Med=s4s[Math.floor(n/2)];
+
+  // Assign quartile and type
+  for(const r of d){
+    if(r.fu<=q1)r.quartile=0;
+    else if(r.fu<=q2)r.quartile=1;
+    else if(r.fu<=q3)r.quartile=2;
+    else r.quartile=3;
+
+    const s1High=r.s1>=s1Med?1:0;
+    const s4High=r.s4>=s4Med?1:0;
+    if(s1High&&s4High)r.type=0; // Breakthrough
+    else if(!s1High&&s4High)r.type=2; // Sleeping Beauty
+    else if(s1High&&!s4High)r.type=1; // Elegant Synthesis
+    else r.type=3; // Incremental
+  }
+
+  // Count flows
+  // Layer 1: quartile -> type
+  const qTypeCounts=[]; // [quartile][type] = count
+  for(let q=0;q<4;q++){
+    qTypeCounts[q]=[];
+    for(let t=0;t<4;t++){
+      qTypeCounts[q][t]=d.filter(r=>r.quartile===q&&r.type===t).length;
+    }
+  }
+
+  // Layer 2: type -> H1/Non-H1 (within each quartile)
+  const typeH1Counts=[]; // [quartile][type][isH1] = count
+  for(let q=0;q<4;q++){
+    typeH1Counts[q]=[];
+    for(let t=0;t<4;t++){
+      const subset=d.filter(r=>r.quartile===q&&r.type===t);
+      typeH1Counts[q][t]=[
+        subset.filter(r=>r.isH1===0).length,
+        subset.filter(r=>r.isH1===1).length
+      ];
+    }
+  }
+
+  // Layout
+  const W=1400,H=900;
+  const margin={top:60,right:120,bottom:40,left:120};
+  const plotW=W-margin.left-margin.right;
+  const plotH=H-margin.top-margin.bottom;
+
+  const colX=[margin.left, margin.left+plotW*0.45, margin.left+plotW*0.85];
+  const nodeW=20;
+
+  // Compute node heights (proportional to count)
+  const qCounts=quartiles.map((_,q)=>d.filter(r=>r.quartile===q).length);
+  const qTotal=qCounts.reduce((a,b)=>a+b,0);
+  const qHeights=qCounts.map(c=>c/qTotal*plotH);
+
+  // Type node heights within each quartile
+  const typeColors=['#10b981','#f59e0b','#8b5cf6','#9ca3af'];
+  const typeLabels=['Breakthrough','Elegant Synthesis','Sleeping Beauty','Incremental'];
+
+  // SVG
+  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+
+  // Draw flows: quartile -> type
+  let qY=margin.top;
+  const qNodePositions=[];
+  for(let q=0;q<4;q++){
+    qNodePositions.push(qY);
+    let tY=qY;
+    for(let t=0;t<4;t++){
+      const count=qTypeCounts[q][t];
+      if(count===0){continue;}
+      const h=count/qTotal*plotH;
+      const x0=colX[0]+nodeW;
+      const x1=colX[1];
+      const y0=qY+qHeights[q]/2;
+      const y1=tY+h/2;
+
+      // Draw band
+      const color=typeColors[t];
+      svg+=`<path d="M ${x0},${qY} C ${x0+50},${qY} ${x1-50},${tY} ${x1},${tY} L ${x1},${tY+h} C ${x1-50},${tY+h} ${x0+50},${qY+qHeights[q]} ${x0},${qY+qHeights[q]} Z" fill="${color}" opacity="0.3"/>`;
+
+      // Count label on band
+      if(h>15){
+        svg+=`<text x="${(x0+x1)/2}" y="${(qY+tY+h)/2+4}" text-anchor="middle" font-size="10" fill="#333">${count}</text>`;
+      }
+
+      tY+=h;
+    }
+    qY+=qHeights[q];
+  }
+
+  // Draw flows: type -> H1/Non-H1
+  const h1Color='#ef4444';
+  const h0Color='#9ca3af';
+  const rightNodeH=h1Count/qTotal*plotH;
+  const h0NodeH=h0Count/qTotal*plotH;
+  const h1Y=margin.top;
+  const h0Y=margin.top+plotH-h0NodeH;
+
+  qY=margin.top;
+  for(let q=0;q<4;q++){
+    let tY=qY;
+    for(let t=0;t<4;t++){
+      const counts=typeH1Counts[q][t];
+      const total=counts[0]+counts[1];
+      if(total===0){tY+=qTypeCounts[q][t]/qTotal*plotH;continue;}
+
+      const bandH=total/qTotal*plotH;
+      const x0=colX[1]+nodeW;
+      const x1=colX[2];
+
+      // H1 flow
+      if(counts[1]>0){
+        const h1H=counts[1]/qTotal*plotH;
+        const y0=tY;
+        const y1=h1Y;
+        svg+=`<path d="M ${x0},${y0} C ${x0+30},${y0} ${x1-30},${y1} ${x1},${y1} L ${x1},${y1+h1H} C ${x1-30},${y1+h1H} ${x0+30},${y0+bandH} ${x0},${y0+bandH} Z" fill="${h1Color}" opacity="0.4"/>`;
+        if(h1H>12){
+          svg+=`<text x="${(x0+x1)/2+20}" y="${(y0+y1+h1H)/2+4}" text-anchor="middle" font-size="9" fill="${h1Color}">${counts[1]}</text>`;
+        }
+      }
+
+      // Non-H1 flow
+      if(counts[0]>0){
+        const h0H=counts[0]/qTotal*plotH;
+        const y0=tY+bandH-h0H;
+        const y1=h0Y;
+        svg+=`<path d="M ${x0},${y0} C ${x0+30},${y0} ${x1-30},${y1} ${x1},${y1} L ${x1},${y1+h0H} C ${x1-30},${y1+h0H} ${x0+30},${y0+bandH} ${x0},${y0+bandH} Z" fill="${h0Color}" opacity="0.3"/>`;
+        if(h0H>12){
+          svg+=`<text x="${(x0+x1)/2+20}" y="${(y0+y1+h0H)/2+4}" text-anchor="middle" font-size="9" fill="#666">${counts[0]}</text>`;
+        }
+      }
+
+      tY+=bandH;
+    }
+    qY+=qHeights[q];
+  }
+
+  // Draw nodes: Quartiles (left column)
+  qY=margin.top;
+  for(let q=0;q<4;q++){
+    const h=qHeights[q];
+    svg+=`<rect x="${colX[0]}" y="${qY}" width="${nodeW}" height="${h}" fill="#3b82f6" rx="3"/>`;
+    svg+=`<text x="${colX[0]-10}" y="${qY+h/2+4}" text-anchor="end" font-size="13" font-weight="600" fill="#111">${quartiles[q]}</text>`;
+    svg+=`<text x="${colX[0]-10}" y="${qY+h/2+18}" text-anchor="end" font-size="11" fill="#666">n=${qCounts[q]}</text>`;
+    qY+=h;
+  }
+
+  // Draw nodes: Types (middle column) - show labels at the top of each quartile block
+  qY=margin.top;
+  for(let q=0;q<4;q++){
+    let tY=qY;
+    for(let t=0;t<4;t++){
+      const count=qTypeCounts[q][t];
+      const h=count/qTotal*plotH;
+      if(h>0){
+        svg+=`<rect x="${colX[1]}" y="${tY}" width="${nodeW}" height="${h}" fill="${typeColors[t]}" rx="2"/>`;
+      }
+      tY+=h;
+    }
+    qY+=qHeights[q];
+  }
+
+  // Type labels (right side of middle column)
+  svg+=`<text x="${colX[1]+nodeW+8}" y="${margin.top-10}" font-size="11" font-weight="600" fill="#333">Innovation Type</text>`;
+  for(let t=0;t<4;t++){
+    const y=margin.top+plotH+t*0; // placeholder
+    svg+=`<text x="${colX[1]+nodeW+8}" y="${margin.top+plotH+20+t*0}" font-size="10" fill="${typeColors[t]}">● ${typeLabels[t]}</text>`;
+  }
+
+  // Draw nodes: H1/Non-H1 (right column)
+  svg+=`<rect x="${colX[2]}" y="${h1Y}" width="${nodeW}" height="${rightNodeH}" fill="${h1Color}" rx="3"/>`;
+  svg+=`<text x="${colX[2]+nodeW+10}" y="${h1Y+rightNodeH/2+4}" font-size="13" font-weight="600" fill="${h1Color}">H1</text>`;
+  svg+=`<text x="${colX[2]+nodeW+10}" y="${h1Y+rightNodeH/2+18}" font-size="11" fill="#666">n=${h1Count}</text>`;
+
+  svg+=`<rect x="${colX[2]}" y="${h0Y}" width="${nodeW}" height="${h0NodeH}" fill="${h0Color}" rx="3"/>`;
+  svg+=`<text x="${colX[2]+nodeW+10}" y="${h0Y+h0NodeH/2+4}" font-size="13" font-weight="600" fill="#666">Non-H1</text>`;
+  svg+=`<text x="${colX[2]+nodeW+10}" y="${h0Y+h0NodeH/2+18}" font-size="11" fill="#666">n=${h0Count}</text>`;
+
+  // Title
+  svg+=`<text x="${W/2}" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#111">Two-Layer Sankey: Composite Quartile → Innovation Type → H1/Non-H1</text>`;
+
+  svg+=`</svg>`;
+  chartDiv.innerHTML=svg;
+
+  // Legend
+  legendDiv.innerHTML=`
+    <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div>Composite Quartile</div>
+    <div class="legend-item"><div class="legend-color" style="background:#10b981"></div>Breakthrough (High S1+High S4)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div>Elegant Synthesis (High S1+Low S4)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#8b5cf6"></div>Sleeping Beauty (Low S1+High S4)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#9ca3af"></div>Incremental (Low S1+Low S4)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>Flow to H1</div>
+    <div class="legend-item"><div class="legend-color" style="background:#9ca3af"></div>Flow to Non-H1</div>
+  `;
+
+  // Note - 详细解读
+  const cnTypeLabels=['突破型（高S1+高S4）','优雅合成（高S1+低S4）','睡美人（低S1+高S4）','增量型（低S1+低S4）'];
+  const typeNames=['Breakthrough','Elegant Synthesis','Sleeping Beauty','Incremental'];
+
+  // 计算各类型的H1富集率
+  const typeStats=typeNames.map((_,ti)=>{
+    const count=d.filter(r=>r.type===ti).length;
+    const h1Count=d.filter(r=>r.type===ti&&r.isH1===1).length;
+    const rate=count>0?(h1Count/count*100).toFixed(1):'0.0';
+    return {count,h1Count,rate};
+  });
+
+  // 计算各四分位的H1富集率
+  const quartileStats=[0,1,2,3].map(q=>{
+    const count=d.filter(r=>r.quartile===q).length;
+    const h1Count=d.filter(r=>r.quartile===q&&r.isH1===1).length;
+    const rate=count>0?(h1Count/count*100).toFixed(1):'0.0';
+    return {count,h1Count,rate};
+  });
+
+  // 找出H1富集率最高的类型
+  const maxEnrichType=typeStats.reduce((max,s,i)=>s.rate>max.rate?{...s,idx:i}:max,{rate:0,idx:0});
+
+  // 计算Q4中各类型的分布
+  const q4TypeDist=typeNames.map((_,ti)=>d.filter(r=>r.quartile===3&&r.type===ti).length);
+
+  noteDiv.innerHTML=`<strong>解读：</strong>
+桑基图展示了论文从<strong>综合分数四分位数</strong>（Q1=最低25%，Q4=最高25%）经过<strong>创新类型</strong>（按S1专家显著性和S4认知偏离度中位数分类）流向<strong>真实标签</strong>（H1/非H1）的过程。
+
+<strong>关键发现：</strong>
+• <strong>H1富集最高的类型：</strong>${cnTypeLabels[maxEnrichType.idx]}（${maxEnrichType.rate}% H1占比，${maxEnrichType.h1Count}/${maxEnrichType.count}篇）
+• <strong>Q4（高分组）分布：</strong>突破型${q4TypeDist[0]}篇 | 优雅合成${q4TypeDist[1]}篇 | 睡美人${q4TypeDist[2]}篇 | 增量型${q4TypeDist[3]}篇
+• <strong>各类型H1富集率：</strong>突破型${typeStats[0].rate}% | 优雅合成${typeStats[1].rate}% | 睡美人${typeStats[2].rate}% | 增量型${typeStats[3].rate}%
+• <strong>四分位趋势：</strong>Q1→Q4的H1占比从${quartileStats[0].rate}%升至${quartileStats[3].rate}%，表明综合分数与F1000Prime推荐呈正相关
+
+红色流带表示流向H1的论文，灰色流带表示流向非H1的论文。流带宽度代表论文数量。`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LITMUS vs Baselines - ROC Comparison</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;padding:24px;color:#212529}
+h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.sub{font-size:13px;color:#6c757d;margin-bottom:20px}
+.card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.card h2{font-size:15px;font-weight:600;margin-bottom:12px;color:#343a40}
+.upload-area{border:2px dashed #dee2e6;border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s}
+.upload-area:hover{border-color:#495057}
+.upload-area p{font-size:13px;color:#6c757d;margin:4px 0}
+.upload-area .icon{font-size:28px;margin-bottom:8px}
+.upload-area a{color:#0d6efd;cursor:pointer}
+.baselines{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.baseline-item{border:1px solid #dee2e6;border-radius:6px;padding:12px}
+.baseline-item h3{font-size:13px;font-weight:600;margin-bottom:8px;color:#495057}
+.baseline-item .status{font-size:11px;color:#6c757d;margin-bottom:8px}
+.baseline-item .status.loaded{color:#198754}
+.baseline-item input[type="file"]{font-size:11px;width:100%}
+.chart-container{position:relative;width:100%;max-width:700px;margin:0 auto}
+canvas{width:100%!important;height:auto!important}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #dee2e6}
+th{background:#f8f9fa;font-weight:600;color:#495057}
+.highlight{background:#e7f5ff;font-weight:600}
+.btn{background:#0d6efd;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-top:12px}
+.btn:hover{background:#0b5ed7}
+.btn:disabled{background:#adb5bd;cursor:not-allowed}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12px}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-color{width:20px;height:3px;border-radius:2px}
+</style>
+</head>
+<body>
+<h1>LITMUS vs Baseline Models - ROC Comparison</h1>
+<p class="sub">Import LITMUS archive and baseline model results to generate comparison ROC curves</p>
+
+<div class="card">
+  <h2>1. LITMUS Archive</h2>
+  <div class="upload-area" id="litmusDrop">
+    <div class="icon"></div>
+    <p>Drop LITMUS archive JSON here, or <a id="litmusBrowse">click to browse</a></p>
+    <input type="file" id="litmusFile" accept=".json" style="display:none">
+  </div>
+  <p id="litmusStatus" style="font-size:12px;color:#6c757d;margin-top:8px"></p>
+</div>
+
+<div class="card">
+  <h2>2. Baseline Model Results</h2>
+  <p style="font-size:12px;color:#6c757d;margin-bottom:12px">Upload CSV files with columns: <code>pmid,score</code> (one file per baseline)</p>
+  <div class="baselines">
+    <div class="baseline-item">
+      <h3>Random Baseline</h3>
+      <p class="status">AUC = 0.500 (fixed)</p>
+    </div>
+    <div class="baseline-item">
+      <h3>TF-IDF + Logistic Regression</h3>
+      <p class="status" id="tfidfStatus">Not loaded</p>
+      <input type="file" id="tfidfFile" accept=".csv,.json" data-baseline="tfidf">
+    </div>
+    <div class="baseline-item">
+      <h3>BioBERT + Logistic Regression</h3>
+      <p class="status" id="biobertStatus">Not loaded</p>
+      <input type="file" id="biobertFile" accept=".csv,.json" data-baseline="biobert">
+    </div>
+    <div class="baseline-item">
+      <h3>Sentence-BERT Semantic Novelty</h3>
+      <p class="status" id="sbertStatus">Not loaded</p>
+      <input type="file" id="sbertFile" accept=".csv,.json" data-baseline="sbert">
+    </div>
+    <div class="baseline-item">
+      <h3>LDA Topic Novelty</h3>
+      <p class="status" id="ldaStatus">Not loaded</p>
+      <input type="file" id="ldaFile" accept=".csv,.json" data-baseline="lda">
+    </div>
+    <div class="baseline-item">
+      <h3>Single LLM Evaluator</h3>
+      <p class="status" id="llmStatus">Not loaded</p>
+      <input type="file" id="llmFile" accept=".csv,.json" data-baseline="llm">
+    </div>
+  </div>
+</div>
+
+<div class="card" id="chartCard" style="display:none">
+  <h2>3. ROC Comparison</h2>
+  <div class="chart-container">
+    <canvas id="rocCanvas" width="700" height="500"></canvas>
+  </div>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="card" id="tableCard" style="display:none">
+  <h2>4. Performance Metrics</h2>
+  <div class="table-wrap">
+    <table id="metricsTable">
+      <thead><tr><th>Model</th><th>AUC-ROC</th><th>AUPRC</th><th>P@100</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const D2R=180/Math.PI;
+let LITMUS=null,BASELINES={};
+const BL_NAMES={tfidf:'TF-IDF + LR',biobert:'BioBERT + LR',sbert:'S-BERT Novelty',lda:'LDA Topic Novelty',llm:'Single LLM'};
+const BL_COLORS={tfidf:'#2196F3',biobert:'#4CAF50',sbert:'#FF9800',lda:'#9C27B0',llm:'#F44336'};
+
+function roc(sc,lb){
+  const n=sc.length;let tp=0,fp=0,tn=0,fn=0;
+  for(let i=0;i<n;i++){if(lb[i]===1)fn++;else tn++;}
+  const pts=[],ts=[...new Set(sc)].sort((a,b)=>b-a);
+  let auc=0,prevFpr=0,prevTpr=0;
+  for(const t of ts){
+    let ntp=0,nfp=0;
+    for(let i=0;i<n;i++){if(sc[i]>=t){if(lb[i]===1)ntp++;else nfp++;}}
+    const tpr=fn>0?ntp/fn:0,fpr=tn>0?nfp/tn:0;
+    pts.push({fpr,tpr});auc+=(fpr-prevFpr)*(tpr+prevTpr)/2;prevFpr=fpr;prevTpr=tpr;
+  }
+  pts.push({fpr:1,tpr:1});auc+=(1-prevFpr)*(1+prevTpr)/2;
+  return{pts,auc};
+}
+
+function prc(sc,lb){
+  const n=sc.length;let tp=0,fp=0;
+  for(let i=0;i<n;i++){if(lb[i]===1)tp++;else fp++;}
+  const pts=[],ts=[...new Set(sc)].sort((a,b)=>b-a);
+  let ap=0,prevR=0,prevP=0;
+  for(const t of ts){
+    let ntp=0,nfp=0;
+    for(let i=0;i<n;i++){if(sc[i]>=t){if(lb[i]===1)ntp++;else nfp++;}}
+    const p=ntp+nfp>0?ntp/(ntp+nfp):0,r=tp>0?ntp/tp:0;
+    pts.push({r,p});ap+=(r-prevR)*p;prevR=r;prevP=p;
+  }
+  return{pts,ap};
+}
+
+function extract(arc){
+  const pmap={};
+  for(const p of arc.papers||[]){pmap[p.pmid]={isH1:(p.isH1===true||p.isH1==='TRUE'||p.isH1===1)?1:0};}
+  const r1={},r2={},r3={},r4={};
+  for(const r of arc.signal1Results||[]){r1[r.pmid]=r;}
+  for(const r of arc.signal2Results||[]){r2[r.pmid]=r;}
+  for(const r of arc.signal3Results||[]){r3[r.pmid]=r;}
+  for(const r of arc.signal4Results||[]){r4[r.pmid]=r;}
+  const vr=[];
+  for(const pmid in pmap){
+    const p=pmap[pmid];
+    const s1=r1[pmid],s2=r2[pmid],s3=r3[pmid],s4=r4[pmid];
+    if(!s1&&!s2&&!s3&&!s4)continue;
+    const row={pmid,lb:p.isH1};
+    if(s1)row.s1=s1.overallImportance>0?s1.overallImportance:(s1.transformativePotential*0.3+s1.broadRelevance*0.25+s1.methodologicalSignificance*0.2+s1.clinicalImpact*0.15+s1.paradigmChallenge*0.1);
+    if(s2)row.s2=s2.meshBreadthScore!==undefined?s2.meshBreadthScore:s2.score;
+    if(s3)row.s3=s3.score;
+    if(s4)row.s4=s4.score;
+    vr.push(row);
+  }
+  // Normalize
+  const sg=['s1','s2','s3','s4'];
+  for(const s of sg){
+    const vs=vr.filter(r=>r[s]!==undefined).map(r=>r[s]);
+    if(!vs.length)continue;
+    const mn=Math.min(...vs),mx=Math.max(...vs);
+    for(const r of vr){if(r[s]!==undefined)r[s+'n']=mx>mn?(r[s]-mn)/(mx-mn):0.5;}
+  }
+  // Fusion with fixed weights
+  const w={s1:0.5,s2:0.3,s3:0.05,s4:0.15};
+  for(const r of vr){
+    let n=0,d=0;
+    for(const s of sg){if(r[s+'n']!==undefined){n+=w[s]*r[s+'n'];d+=w[s];}}
+    r.fu=d>0?n/d:0;
+  }
+  return vr;
+}
+
+function parseBaselineFile(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const text=e.target.result;
+      const rows=[];
+      if(file.name.endsWith('.json')){
+        const data=JSON.parse(text);
+        for(const r of data){rows.push({pmid:String(r.pmid),score:Number(r.score)});}
+      }else{
+        const lines=text.trim().split('\n');
+        const header=lines[0].toLowerCase();
+        const pmidIdx=header.includes('pmid')?header.split(',').indexOf('pmid'):0;
+        const scoreIdx=header.includes('score')?header.split(',').indexOf('score'):1;
+        for(let i=1;i<lines.length;i++){
+          const cols=lines[i].split(',');
+          if(cols.length>=2){rows.push({pmid:String(cols[pmidIdx]).trim(),score:Number(cols[scoreIdx])});}
+        }
+      }
+      resolve(rows);
+    };
+    reader.onerror=reject;
+    reader.readAsText(file);
+  });
+}
+
+function drawROC(){
+  const canvas=document.getElementById('rocCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  const ox=80,oy=40,w=W-120,h=H-100;
+  
+  // Background
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  
+  // Grid
+  ctx.strokeStyle='#e9ecef';ctx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    const x=ox+i/10*w,y=oy+i/10*h;
+    ctx.beginPath();ctx.moveTo(x,oy);ctx.lineTo(x,oy+h);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+w,y);ctx.stroke();
+  }
+  
+  // Diagonal (random)
+  ctx.strokeStyle='#adb5bd';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+  ctx.beginPath();ctx.moveTo(ox,oy+h);ctx.lineTo(ox+w,oy);ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Axes
+  ctx.strokeStyle='#495057';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox,oy+h);ctx.lineTo(ox+w,oy+h);ctx.stroke();
+  
+  // Labels
+  ctx.fillStyle='#495057';ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('False Positive Rate',ox+w/2,oy+h+30);
+  ctx.save();ctx.translate(20,oy+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('True Positive Rate',0,0);ctx.restore();
+  
+  // Tick labels
+  ctx.font='10px sans-serif';ctx.textAlign='right';
+  for(let i=0;i<=10;i+=2){ctx.fillText((i/10).toFixed(1),ox-8,oy+h-i/10*h+4);}
+  ctx.textAlign='center';
+  for(let i=0;i<=10;i+=2){ctx.fillText((i/10).toFixed(1),ox+i/10*w,oy+h+15);}
+  
+  // Title
+  ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+  ctx.fillText('ROC Curve Comparison',ox+w/2,20);
+  
+  // Draw curves
+  const models=[];
+  
+  // Random baseline
+  models.push({name:'Random',auc:0.5,color:'#adb5bd',pts:[{fpr:0,tpr:0},{fpr:1,tpr:1}]});
+  
+  // Baselines
+  for(const[key,data]of Object.entries(BASELINES)){
+    if(!data.scores||!data.labels)continue;
+    const r=roc(data.scores,data.labels);
+    models.push({name:BL_NAMES[key],auc:r.auc,color:BL_COLORS[key],pts:r.pts});
+  }
+  
+  // LITMUS
+  if(LITMUS){
+    const sc=LITMUS.map(r=>r.fu),lb=LITMUS.map(r=>r.lb);
+    const r=roc(sc,lb);
+    models.push({name:'LITMUS (Ours)',auc:r.auc,color:'#dc3545',pts:r.pts,lw:2.5});
+  }
+  
+  // Sort by AUC (draw lower AUC first)
+  models.sort((a,b)=>a.auc-b.auc);
+  
+  for(const m of models){
+    ctx.strokeStyle=m.color;ctx.lineWidth=m.lw||1.5;
+    ctx.beginPath();
+    for(let i=0;i<m.pts.length;i++){
+      const x=ox+m.pts[i].fpr*w,y=oy+h-m.pts[i].tpr*h;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  
+  // Legend
+  const legend=document.getElementById('legend');
+  legend.innerHTML='';
+  for(const m of models){
+    const item=document.createElement('div');item.className='legend-item';
+    item.innerHTML=`<div class="legend-color" style="background:${m.color}"></div><span>${m.name} (AUC=${m.auc.toFixed(3)})</span>`;
+    legend.appendChild(item);
+  }
+  
+  // Metrics table
+  const tbody=document.querySelector('#metricsTable tbody');
+  tbody.innerHTML='';
+  for(const m of models){
+    const tr=document.createElement('tr');
+    if(m.name==='LITMUS (Ours)')tr.className='highlight';
+    let auprc='-',p100='-';
+    if(m.name!=='Random'&&BASELINES[Object.keys(BASELINES).find(k=>BL_NAMES[k]===m.name)]){
+      const key=Object.keys(BASELINES).find(k=>BL_NAMES[k]===m.name);
+      const data=BASELINES[key];
+      const pr=prc(data.scores,data.labels);
+      auprc=pr.ap.toFixed(3);
+      // P@100
+      const sorted=[...data.scores].sort((a,b)=>b-a);
+      const threshold=sorted[99]||0;
+      let tp=0;
+      for(let i=0;i<data.scores.length;i++){if(data.scores[i]>=threshold&&data.labels[i]===1)tp++;}
+      p100=(tp/100).toFixed(3);
+    }else if(m.name==='LITMUS (Ours)'&&LITMUS){
+      const sc=LITMUS.map(r=>r.fu),lb=LITMUS.map(r=>r.lb);
+      const pr=prc(sc,lb);
+      auprc=pr.ap.toFixed(3);
+      const sorted=[...sc].sort((a,b)=>b-a);
+      const threshold=sorted[99]||0;
+      let tp=0;
+      for(let i=0;i<sc.length;i++){if(sc[i]>=threshold&&lb[i]===1)tp++;}
+      p100=(tp/100).toFixed(3);
+    }
+    tr.innerHTML=`<td>${m.name}</td><td>${m.auc.toFixed(3)}</td><td>${auprc}</td><td>${p100}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded',()=>{
+  const litmusFile=document.getElementById('litmusFile');
+  const litmusBrowse=document.getElementById('litmusBrowse');
+  const litmusDrop=document.getElementById('litmusDrop');
+  
+  litmusBrowse.onclick=()=>litmusFile.click();
+  litmusDrop.onclick=e=>{if(e.target!==litmusBrowse)litmusFile.click();};
+  
+  litmusFile.onchange=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    try{
+      const arc=JSON.parse(await file.text());
+      if(!arc.papers||!arc.papers.length)throw new Error('No papers found');
+      LITMUS=extract(arc);
+      if(!LITMUS.length)throw new Error('No signal results found');
+      document.getElementById('litmusStatus').textContent=`Loaded: ${LITMUS.length} papers, ${LITMUS.filter(r=>r.lb===1).length} H1`;
+      document.getElementById('litmusStatus').style.color='#198754';
+      document.getElementById('chartCard').style.display='block';
+      document.getElementById('tableCard').style.display='block';
+      drawROC();
+    }catch(err){
+      document.getElementById('litmusStatus').textContent='Error: '+err.message;
+      document.getElementById('litmusStatus').style.color='#dc3545';
+    }
+  };
+  
+  // Baseline file inputs
+  for(const key of Object.keys(BL_NAMES)){
+    const input=document.getElementById(key+'File');
+    if(!input)continue;
+    input.onchange=async e=>{
+      const file=e.target.files[0];if(!file)return;
+      try{
+        const rows=await parseBaselineFile(file);
+        if(!rows.length)throw new Error('No data rows');
+        // Match with LITMUS labels
+        if(!LITMUS){
+          BASELINES[key]={rows};
+          document.getElementById(key+'Status').textContent=`Loaded: ${rows.length} papers (import LITMUS first for ROC)`;
+          document.getElementById(key+'Status').className='status loaded';
+          return;
+        }
+        const lmap={};for(const r of LITMUS)lmap[r.pmid]=r.lb;
+        const scores=[],labels=[];
+        for(const row of rows){
+          if(lmap[row.pmid]!==undefined){scores.push(row.score);labels.push(lmap[row.pmid]);}
+        }
+        if(!scores.length)throw new Error('No PMID match with LITMUS');
+        BASELINES[key]={scores,labels};
+        const r=roc(scores,labels);
+        document.getElementById(key+'Status').textContent=`Loaded: ${scores.length} papers, AUC=${r.auc.toFixed(3)}`;
+        document.getElementById(key+'Status').className='status loaded';
+        drawROC();
+      }catch(err){
+        document.getElementById(key+'Status').textContent='Error: '+err.message;
+        document.getElementById(key+'Status').style.color='#dc3545';
+      }
+    };
+  }
+});
+</script>
+</body>
+</html>

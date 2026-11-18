@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LITMUS Research Design Framework</title>
+<style>
+  @import url('https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px;
+    min-height: 100vh;
+  }
+
+  .framework {
+    width: 1140px;
+    position: relative;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  .header h1 span {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 400;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ===== Flow Container ===== */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  /* ===== Section Card ===== */
+  .section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    border: 1px solid #e2e8f0;
+    position: relative;
+  }
+  .section-tag {
+    position: absolute;
+    top: -10px;
+    left: 24px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 4px;
+    color: #fff;
+  }
+  .tag-input { background: #475569; }
+  .tag-signal { background: #6366f1; }
+  .tag-fusion { background: #7c3aed; }
+  .tag-eval { background: #d97706; }
+
+  /* ===== Connector ===== */
+  .connector {
+    display: flex;
+    justify-content: center;
+    height: 36px;
+    position: relative;
+  }
+  .connector-line {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+    position: relative;
+  }
+  .connector-line::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #94a3b8;
+  }
+  .connector-label {
+    position: absolute;
+    right: calc(50% - 140px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== Input Section ===== */
+  .input-grid {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: stretch;
+  }
+  .input-card {
+    flex: 1;
+    max-width: 500px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .input-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 10px;
+  }
+  .input-card .fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .field-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .input-card .desc {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  /* ===== Signal Section ===== */
+  .signal-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .signal-card {
+    border-radius: 12px;
+    padding: 18px 14px 14px;
+    text-align: center;
+    border: 1.5px solid;
+    position: relative;
+    overflow: hidden;
+  }
+  .signal-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  .signal-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 16px;
+  }
+  .signal-num {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+  .signal-name {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1.35;
+  }
+  .signal-method {
+    font-size: 10px;
+    color: #4b5563;
+    line-height: 1.6;
+    text-align: left;
+    padding: 10px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .signal-method li {
+    margin-left: 12px;
+    margin-bottom: 2px;
+    list-style: none;
+    position: relative;
+  }
+  .signal-method li::before {
+    content: '·';
+    position: absolute;
+    left: -8px;
+    font-weight: 700;
+  }
+  .signal-formula {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+  }
+
+  /* Signal 1 - Red/Rose */
+  .s1 { background: #fff5f5; border-color: #fecaca; }
+  .s1::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .s1 .signal-icon { background: #fee2e2; color: #dc2626; }
+  .s1 .signal-num { color: #dc2626; }
+  .s1 .signal-name { color: #991b1b; }
+  .s1 .signal-formula { background: #fee2e2; color: #991b1b; }
+
+  /* Signal 2 - Blue */
+  .s2 { background: #eff6ff; border-color: #bfdbfe; }
+  .s2::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .s2 .signal-icon { background: #dbeafe; color: #2563eb; }
+  .s2 .signal-num { color: #2563eb; }
+  .s2 .signal-name { color: #1e40af; }
+  .s2 .signal-formula { background: #dbeafe; color: #1e40af; }
+
+  /* Signal 3 - Green */
+  .s3 { background: #f0fdf4; border-color: #bbf7d0; }
+  .s3::before { background: linear-gradient(90deg, #22c55e, #4ade80); }
+  .s3 .signal-icon { background: #dcfce7; color: #16a34a; }
+  .s3 .signal-num { color: #16a34a; }
+  .s3 .signal-name { color: #166534; }
+  .s3 .signal-formula { background: #dcfce7; color: #166534; }
+
+  /* Signal 4 - Purple */
+  .s4 { background: #faf5ff; border-color: #e9d5ff; }
+  .s4::before { background: linear-gradient(90deg, #a855f7, #c084fc); }
+  .s4 .signal-icon { background: #f3e8ff; color: #9333ea; }
+  .s4 .signal-num { color: #9333ea; }
+  .s4 .signal-name { color: #6b21a8; }
+  .s4 .signal-formula { background: #f3e8ff; color: #6b21a8; }
+
+  /* ===== Fusion Section ===== */
+  .fusion-content {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .fusion-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4c1d95;
+    margin-bottom: 12px;
+  }
+  .fusion-formula-box {
+    background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+    border: 1px solid #e9d5ff;
+    border-radius: 10px;
+    padding: 14px 24px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+  .fusion-formula-main {
+    font-family: 'Times New Roman', serif;
+    font-size: 17px;
+    color: #4c1d95;
+    font-style: italic;
+    margin-bottom: 4px;
+  }
+  .fusion-note {
+    font-size: 11px;
+    color: #6b7280;
+  }
+  .weight-pills {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  .weight-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .wp1 { background: #fee2e2; color: #991b1b; }
+  .wp2 { background: #dbeafe; color: #1e40af; }
+  .wp3 { background: #dcfce7; color: #166534; }
+  .wp4 { background: #f3e8ff; color: #6b21a8; }
+
+  /* ===== Evaluation Section ===== */
+  .eval-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .eval-card {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .eval-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 4px;
+  }
+  .eval-card p {
+    font-size: 11px;
+    color: #78716c;
+    line-height: 1.5;
+  }
+
+  /* ===== Validation Section ===== */
+  .validation-section {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+  }
+  .validation-main {
+    flex: 1;
+  }
+  .validation-side {
+    width: 220px;
+    flex-shrink: 0;
+  }
+  .gt-card {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1.5px solid #86efac;
+    border-radius: 12px;
+    padding: 18px 24px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .gt-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #166534;
+    margin-bottom: 8px;
+  }
+  .gt-card .gt-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .gt-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #86efac;
+    color: #166534;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .gt-card .gt-desc {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+  .compare-card {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border: 1.5px solid #fca5a5;
+    border-radius: 12px;
+    padding: 18px 24px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .compare-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #991b1b;
+    margin-bottom: 6px;
+  }
+  .compare-card p {
+    font-size: 11px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+  .compare-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #94a3b8;
+  }
+
+  /* ===== Side annotation ===== */
+  .side-note {
+    position: absolute;
+    right: -120px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .side-bracket {
+    width: 16px;
+    height: 120px;
+    border: 2px solid #d97706;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+  }
+  .side-text {
+    font-size: 10px;
+    font-weight: 600;
+    color: #d97706;
+    writing-mode: vertical-rl;
+    letter-spacing: 1px;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+</style>
+</head>
+<body>
+<div class="framework">
+
+  <!-- Header -->
+  <div class="header">
+    <h1><span>LITMUS</span>: Multi-Signal Framework for Predicting Paper Impact</h1>
+    <p>A four-signal computational approach to identifying high-impact research in biomedical literature, validated against F1000Prime expert curation.</p>
+  </div>
+
+  <div class="flow">
+
+    <!-- ===== Layer 1: Data Input ===== -->
+    <div class="section">
+      <div class="section-tag tag-input">Data Input</div>
+      <div class="input-grid">
+        <div class="input-card">
+          <h3>Paper Corpus</h3>
+          <div class="fields">
+            <span class="field-chip">PMID</span>
+            <span class="field-chip">Title</span>
+            <span class="field-chip">Abstract</span>
+            <span class="field-chip">MeSH Terms</span>
+            <span class="field-chip">Year</span>
+          </div>
+          <div class="desc">N = 3,100 Nature-indexed biomedical papers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div class="connector">
+      <div class="connector-line"></div>
+      <span class="connector-label">Distribute to four signals</span>
+    </div>
+
+    <!-- ===== Layer 2: Four Signals ===== -->
+    <div class="section">
+      <div class="section-tag tag-signal">Signal Computation</div>
+      <div class="signal-grid">
+
+        <!-- Signal 1 -->
+        <div class="signal-card s1">
+          <div class="signal-icon">&#x1F9E0;</div>
+          <div class="signal-num">SIGNAL 1</div>
+          <div class="signal-name">LLM Impact<br>Assessment</div>
+          <div class="signal-method">
+            <strong>5-dimension evaluation:</strong>
+            <ul>
+              <li>Transformative potential</li>
+              <li>Broad relevance</li>
+              <li>Methodological significance</li>
+              <li>Clinical/translational impact</li>
+              <li>Paradigm challenge</li>
+            </ul>
+            <strong>Model:</strong> Doubao Seed / DeepSeek V3
+          </div>
+          <div class="signal-formula">S<sub>1</sub> &isin; [0, 1]</div>
+        </div>
+
+        <!-- Signal 2 -->
+        <div class="signal-card s2">
+          <div class="signal-icon">&#x1F310;</div>
+          <div class="signal-num">SIGNAL 2</div>
+          <div class="signal-name">MeSH Topic<br>Breadth</div>
+          <div class="signal-method">
+            <strong>Tree-number classification:</strong>
+            <ul>
+              <li>Query NLM MeSH API</li>
+              <li>Map to 8 major categories (A&ndash;V)</li>
+              <li>Count unique domain coverage</li>
+              <li>MeSH=0 &rarr; fixed 0.25 (de-bias)</li>
+            </ul>
+            <strong>Source:</strong> id.nlm.nih.gov/mesh/
+          </div>
+          <div class="signal-formula">S<sub>2</sub> = domains / 8</div>
+        </div>
+
+        <!-- Signal 3 -->
+        <div class="signal-card s3">
+          <div class="signal-icon">&#x1F578;</div>
+          <div class="signal-num">SIGNAL 3</div>
+          <div class="signal-name">Knowledge<br>Bridging</div>
+          <div class="signal-method">
+            <strong>Bipartite network analysis:</strong>
+            <ul>
+              <li>TF-IDF + TextRank keywords</li>
+              <li>Paper&ndash;keyword bipartite graph</li>
+              <li>Brandes betweenness centrality</li>
+              <li>Cross-domain connectivity</li>
+            </ul>
+            <strong>Type:</strong> Pure computation
+          </div>
+          <div class="signal-formula">S<sub>3</sub> = norm(BC)</div>
+        </div>
+
+        <!-- Signal 4 -->
+        <div class="signal-card s4">
+          <div class="signal-icon">&#x1F4A1;</div>
+          <div class="signal-num">SIGNAL 4</div>
+          <div class="signal-name">Cognitive<br>Deviation</div>
+          <div class="signal-method">
+            <strong>Dual-component novelty:</strong>
+            <ul>
+              <li>Semantic deviation (internal):<br>1 &minus; mean cos(v<sub>i</sub>, v<sub>j</sub>)</li>
+              <li>Concept rarity (frequency):<br>low-freq MeSH ratio</li>
+            </ul>
+            <strong>Embedding:</strong> coze-coding-dev-sdk
+          </div>
+          <div class="signal-formula">S<sub>4</sub> = 0.5D + 0.5F</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div class="connector">
+      <div class="connector-line"></div>
+      <span class="connector-label">Aggregate scores</span>
+    </div>
+
+    <!-- ===== Layer 3: Fusion ===== -->
+    <div class="section">
+      <div class="section-tag tag-fusion">Score Fusion</div>
+      <div class="fusion-content">
+        <div class="fusion-title">Weighted Score Fusion with Min-Max Normalization</div>
+        <div class="fusion-formula-box">
+          <div class="fusion-formula-main">Fused Score = &Sigma;<sub>k=1..4</sub> w<sub>k</sub> &middot; Normalize(S<sub>k</sub>) &frasl; &Sigma; w<sub>k</sub></div>
+          <div class="fusion-note">Degenerate signal detection &rarr; auto re-weight (weight = 0 if all values identical)</div>
+        </div>
+        <div class="weight-pills">
+          <span class="weight-pill wp1">w<sub>1</sub> = 0.35 (Impact)</span>
+          <span class="weight-pill wp2">w<sub>2</sub> = 0.25 (Breadth)</span>
+          <span class="weight-pill wp3">w<sub>3</sub> = 0.05 (Bridging)</span>
+          <span class="weight-pill wp4">w<sub>4</sub> = 0.35 (Deviation)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div class="connector">
+      <div class="connector-line"></div>
+      <span class="connector-label">Compare with ground truth</span>
+    </div>
+
+    <!-- ===== Layer 4: Validation ===== -->
+    <div class="section">
+      <div class="section-tag tag-eval">Validation & Evaluation</div>
+      <div class="validation-section">
+        <div class="validation-main">
+          <div style="display:flex; gap:16px; align-items:stretch; height:100%;">
+            <div class="gt-card" style="flex:1;">
+              <h3>Ground Truth: F1000Prime Labels</h3>
+              <div class="gt-fields">
+                <span class="gt-chip">PMID</span>
+                <span class="gt-chip">Classification</span>
+                <span class="gt-chip">Rating</span>
+              </div>
+              <div class="gt-desc">Expert-curated H1 (High Impact) annotations<br>Used as <strong>held-out benchmark</strong> for evaluation</div>
+            </div>
+            <div class="compare-arrow">&harr;</div>
+            <div class="compare-card" style="flex:1;">
+              <h3>Performance Metrics</h3>
+              <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+                <div style="background:#fff; border-radius:6px; padding:8px 12px;">
+                  <strong style="color:#92400e; font-size:12px;">AUC-ROC</strong>
+                  <div style="font-size:10px; color:#6b7280;">Overall discrimination capacity</div>
+                </div>
+                <div style="background:#fff; border-radius:6px; padding:8px 12px;">
+                  <strong style="color:#92400e; font-size:12px;">Precision@K</strong>
+                  <div style="font-size:10px; color:#6b7280;">Top-K retrieval accuracy (K = |H1|)</div>
+                </div>
+                <div style="background:#fff; border-radius:6px; padding:8px 12px;">
+                  <strong style="color:#92400e; font-size:12px;">Cohen's d</strong>
+                  <div style="font-size:10px; color:#6b7280;">Effect size: H1 vs. non-H1 groups</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    LITMUS &mdash; Laboratory for Innovative Text Mining & Unified Signals &bull; Biomedical Paper Impact Prediction
+  </div>
+
+</div>
+</body>
+</html>
