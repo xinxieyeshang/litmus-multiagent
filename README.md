@@ -2,7 +2,7 @@
 
 > 一套面向科技论文创新性测度的多智能体协作系统。四路专业智能体并行推理、协调智能体统一调度、融合智能体加权研判，在 H1 Connect 专家标注基准上完成验证。从架构设计、服务端到前端可视化全链路实现。
 
-**在线展示站**：<https://xinxieyeshang.github.io/litmus-showcase/>（若未上线，见下方本地运行）
+**在线展示站**：<https://xinxieyeshang.github.io/litmus-multiagent/>
 
 ---
 
@@ -92,7 +92,7 @@
 
 ---
 
-## 四、实证结果（来自论文 11.6 版）
+## 四、系统效果
 
 - 数据规模：Nature 主数据集 3,075 篇 + MEDLINE 9,990 篇（约 1 万篇级处理）
 - 最佳 ROC-AUC：0.85+（H1 Connect 专家标注基准）
@@ -114,7 +114,7 @@ src/
 ├── storage/         # Supabase / PostgreSQL schema
 ├── app/api/         # REST API：multi-agent / signal1-4 / task
 └── components/      # React 组件
-public/              # 可视化展示站（静态页面，打开即出图）
+public/              # 可视化展示站
 ├── framework.html / dataflow.html
 ├── figures-v2.html / figures.html / sankey.html
 └── roc-comparison.html / incremental.html
@@ -143,7 +143,7 @@ pnpm build      # 生产构建
 |---|---|
 | `index.html` | 首页：架构、工程能力、技术深度入口 |
 | `architecture.html` | **技术深度页**：星型拓扑、消息协议、诚信设计、融合算法、性能调优 |
-| `public/figures-v2.html` | 招牌页：打开即自动生成 11 张发表级图表 |
+| `public/figures-v2.html` | 招牌页：打开即自动生成 11 张高清图表 |
 | `public/framework.html` / `dataflow.html` | 系统框架与数据流 |
 | `public/sankey.html` / `figures.html` / `roc-comparison.html` / `incremental.html` | 交互可视化 |
 
